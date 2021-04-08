@@ -33,7 +33,7 @@ label {
 }
 
 .link[highlighted="false"] {
-  stroke-opacity: 0.2;
+  stroke-opacity: 0.1;
 }
 
 .node circle {
@@ -42,12 +42,20 @@ label {
   cursor: pointer;
 }
 
-.node.cause circle {
-  fill: #702f2f;
-}
-
 .node.cause[highlighted="false"] circle {
   opacity: 0.2;
+}
+
+.node.cause[type="Human error"] circle {
+  fill: #009d9a;
+}
+
+.node.cause[type="Natural environment"] circle {
+  fill: #6929c4;
+}
+
+.node.cause[type="Uncategorized"] circle {
+  fill: #012749;
 }
 
 .node.detail-cause circle {
@@ -65,14 +73,6 @@ label {
 
 .node .detail-label {
   fill: black;
-}
-
-[highlighted="true"] circle {
-  fill: blue;
-}
-
-[highlighted="false"] circle {
-  fill: blue;
 }
 
 text {

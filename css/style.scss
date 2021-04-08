@@ -36,7 +36,7 @@ label {
         stroke-opacity: 1;
     }
     &[highlighted="false"] {
-        stroke-opacity: 0.2;
+        stroke-opacity: 0.1;
     }
 }
 
@@ -46,19 +46,33 @@ label {
         stroke-width: 1.5px;
         cursor: pointer;
     }
+    // https://www.carbondesignsystem.com/data-visualization/color-palettes/
+    $human-color: #009d9a;
+    $natural-color: #6929c4;
+    $uncategorized-color: #012749;
+
     circle {
         @include default();
     }
-    &.cause {     
-        circle {
-            fill: $cause;
-        }   
+    &.cause {
         &[highlighted="true"] circle {
         }
         &[highlighted="false"] circle {
             opacity: 0.2;
         }
-    }
+        &[type = "Human error"] circle {
+            fill: $human-color;
+        }
+        &[type = "Natural environment"] circle {
+            fill: $natural-color;
+        }
+        &[type = "Uncategorized"] circle {
+            fill: $uncategorized-color
+        }
+    }   
+
+
+
     &.detail-cause circle {
         fill: #2d0d68;
     }
@@ -73,19 +87,6 @@ label {
         fill: black;
     }
 
-}
-
-
-[highlighted="true"] {
-    circle {
-        fill: blue
-    }
-}
-
-[highlighted="false"] {
-    circle {
-        fill: blue
-    }
 }
   
 

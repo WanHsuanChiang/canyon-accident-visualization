@@ -14,8 +14,46 @@ let ctx = {
   INJURY: null,
 };
 let injuryList = [];
-
 let nodeNeighbor = [];
+
+const causeType = {
+  "Inadequate equipment": "Human error",
+  "Rappel error": "Human error",
+  "Communication error": "Human error",
+  "Anchor error": "Human error",
+  "Exposure": "Natural environment",
+  "Rockfall": "Natural environment",
+  "Panic": "Human error",
+  "Rigging error": "Human error",
+  "Illness": "Human error",
+  "Static block error": "Human error",
+  "No backup": "Human error",
+  "Solo canyoneering": "Human error",
+  "Toboggan error": "Human error",
+  "Stuck rope": "Human error",
+  "Exhaustion": "Human error",
+  "Stuck rope": "Human error",
+  "Jumping error": "Human error",
+  "Equipment misuse": "Human error",
+  "Navigation error": "Human error",
+  "Inexperience": "Human error",
+  "Hanging upside down": "Human error",
+  "Weather": "Natural environment",
+  "Worn out equipment": "Human error",
+  "Overconfidence": "Human error",
+  "Group dynamics": "Human error",
+  "Darkness": "Natural environment",
+  "Water": "Natural environment",
+  "Judgment": "Human error",
+  "Fall or slip": "Human error",
+  "Failure to retreat": "Human error",
+  "Unkonwn": "Uncategorized",
+}
+
+
+
+
+
 //var color = d3.scaleOrdinal(d3.schemeCategory20);
 
 
@@ -32,7 +70,7 @@ d3.csv(dataUrl).then(function (accidentData) {
   let detailedData;
 
   networkData = getNetworkData(accidentData);
-  draw(networkData);  
+  draw(networkData);
   // TODO
   d3.select('#injury-option')
     .on('change', function () {
@@ -72,20 +110,43 @@ d3.csv(dataUrl).then(function (accidentData) {
 
 function draw(data) {
 
-
-  ctx.GRPAH = "cause";  
+  ctx.GRPAH = "cause";
+  svg.selectAll("*").remove();
 
   svg.attr("viewBox", [-width / 2, -height / 2, width, height]);
 
+  
+
+
   const simulation = d3.forceSimulation()
     .force("link", d3.forceLink().id(d => d.id))
-    .force("charge", d3.forceManyBody().strength(-450))
-    //.force("center", d3.forceCenter(width / 2, height / 2))
-    .force("collide", d3.forceCollide().strength(1).radius(40))
+    .force("charge", d3.forceManyBody().strength(-500))
+    .force("center", d3.forceCenter(0, 0))
+    .force("collide", d3.forceCollide().strength(0.5).radius(70))
     .force("x", d3.forceX())
     .force("y", d3.forceY());
+    //.force("box_force",box_force());
+    /*
+    .force("bouding-box", () => {
+      let nodes = d3.selectAll(".node")._groups[0];
+      for(i = 0; i<nodes.length; i++ ){
+        if (isOutside(nodes[i])){
+          d3.select(nodes[i]).x = 0;
+          d3.select(nodes[i]).y = 0
+        };
+      };
+    });
+    */
+  
+  //custom force to put stuff in a box 
+  function box_force() {
+    for (var i = 0, n = data.nodes.length; i < n; ++i) {
+      let curr_node = data.nodes[i];
+      curr_node.x = Math.max(function (d) { return Math.sqrt(d.value) * 15 }, Math.min(width - function (d) { return Math.sqrt(d.value) * 15 }, curr_node.x));
+      curr_node.y = Math.max(function (d) { return Math.sqrt(d.value) * 15 }, Math.min(height - function (d) { return Math.sqrt(d.value) * 15 }, curr_node.y));
+    }
+  }
 
-  svg.selectAll("*").remove();
 
   const links = data.links.map(d => Object.create(d));
   const nodes = data.nodes.map(d => Object.create(d));
@@ -100,20 +161,18 @@ function draw(data) {
     .attr("class", "link")
     .attr("source", function (d) { return d.source })
     .attr("target", function (d) { return d.target })
-    .attr("stroke-width", function (d) { return Math.sqrt(d.value)*2; });
+    .attr("stroke-width", function (d) { return Math.sqrt(d.value) * 2; });
 
   var node = svg.append("g")
     .attr("class", "nodes")
     .selectAll("g")
     .data(nodes)
-    .enter().append("g")
+    .enter().append("g");
 
   var circles = node.append("circle")
-    .attr("r", function (d) { return Math.sqrt(d.value) * 8; })
+    .attr("r", function (d) { return Math.sqrt(d.value) * 15; })
     //.attr("class", function (d) { return d.group; })
-    //.attr("fill", function(d) { return color(d.group); })
-    .on("mouseenter", mouseenter)
-    .on("mouseleave", mouseleave)
+    //.attr("fill", function(d) { return color(d.group); })    
     .call(d3.drag()
       .on("start", dragstarted)
       .on("drag", dragged)
@@ -124,15 +183,23 @@ function draw(data) {
       return d.id;
     })
     .attr("text-anchor", "middle")
-    .attr("class","cause-label")
+    .attr("class", "cause-label")
     .attr('x', 0)
     .attr('y', 0);
 
   node.append("title")
-    .text(function (d) { return d.id; });
+    .text(function (d) { return d.id; })
 
   node.attr("title", function (d) { return d.id; })
-    .attr("class", "node cause");
+    .attr("class", "node cause")
+    .attr("type", function (d) {
+      let cause = d.id;
+      let type = (causeType[cause] === undefined) ? "Uncategorized" : causeType[cause];
+      return type;
+    })
+    .on("mouseenter", mouseenter)
+    .on("mouseleave", mouseleave);
+
 
   simulation
     .nodes(nodes)
@@ -148,10 +215,17 @@ function draw(data) {
       .attr("x2", function (d) { return d.target.x; })
       .attr("y2", function (d) { return d.target.y; });
 
+        node
+          .attr("transform", function (d) {
+            return "translate(" + d.x + "," + d.y + ")";
+          });
+
+   /*
     node
-      .attr("transform", function (d) {
-        return "translate(" + d.x + "," + d.y + ")";
-      })
+      .attr("cx", function (d) { return d.x = Math.max(15, Math.min(width - 15, d.x)); })
+      .attr("cy", function (d) { return d.y = Math.max(15, Math.min(height - 15, d.y)); });
+*/
+
   }
   // drag and drop
   function dragstarted(event, d) {
@@ -173,19 +247,19 @@ function draw(data) {
 
   // mouseenter and mouseleave
   function mouseenter(event, d) {
-    let targetNode = d3.select(this.parentNode);
+    let targetNode = d3.select(this);
     let cause = targetNode.attr("title");
     // highlight nodes
     d3.selectAll(".node").attr("highlighted", false);
     targetNode.attr("highlighted", true);
-    let index = getJsonArrayIndex(nodeNeighbor,"cause",cause);
-    if(index !== -1){
+    let index = getJsonArrayIndex(nodeNeighbor, "cause", cause);
+    if (index !== -1) {
       let causeNeighbors = nodeNeighbor[index].neighbor;
       for (i = 0; i < causeNeighbors.length; i++) {
         d3.select('[title="' + causeNeighbors[i] + '"]').attr("highlighted", true);
       }
     }
-    
+
     // highlight links
     d3.selectAll(".link").attr("highlighted", false);
     d3.selectAll('[source="' + cause + '"]').attr("highlighted", true);
@@ -225,7 +299,7 @@ function drawDetail(data, cause) {
     .selectAll("line")
     .data(links)
     .enter().append("line")
-    .attr("class","link")
+    .attr("class", "link")
     .attr("stroke-width", function (d) { return Math.sqrt(d.value); });
 
   var node = svg.append("g")
@@ -242,15 +316,15 @@ function drawDetail(data, cause) {
       .on("start", dragstarted)
       .on("drag", dragged)
       .on("end", dragended));
-  
+
   var lables = node.append("text")
     .text(function (d) {
       return d.data.name;
     })
-    .attr("class","detail-label")
+    .attr("class", "detail-label")
     .attr('x', 6)
     .attr('y', 3);
-  
+
   node.append("title")
     .text(function (d) { return d.data.name; });
 
@@ -305,10 +379,10 @@ function drawDetail(data, cause) {
 
 }
 
-function drawFilter(array){
+function drawFilter(array) {
   let select = d3.select("#injury-option");
-  for(i = 0; i < array.length;i++){
-    select.append("option").attr("value",array[i]).html(array[i]);
+  for (i = 0; i < array.length; i++) {
+    select.append("option").attr("value", array[i]).html(array[i]);
   }
 }
 
@@ -327,7 +401,7 @@ function find_in_object(my_array, my_criteria) {
 
 // transform raw data to node-link dataset
 function getNetworkData(raw) {
-  
+
   nodeNeighbor = [];
 
   let network = {
@@ -350,6 +424,7 @@ function getNetworkData(raw) {
         network.nodes.push({
           "id": cause,
           "cause": cause,
+          "type": causeType[cause],
           "value": 1,
         });
       } else {
@@ -377,20 +452,20 @@ function getNetworkData(raw) {
         } else {
           let linkValue = network.links[linkIndex].value;
           network.links[linkIndex].value = linkValue + 1;
-        } 
-        
+        }
+
         // push value inside nodeNeighbor        
-        pushNodeNeighbor(pair[0],pair[1]);
-        pushNodeNeighbor(pair[1],pair[0]);
-        
+        pushNodeNeighbor(pair[0], pair[1]);
+        pushNodeNeighbor(pair[1], pair[0]);
+
       }
     }
     // deal with injury
     let injuries = d.injury.split(",").sort();
     for (i = 0; i < injuries.length; i++) {
-        if (injuryList.indexOf(injuries[i]) === -1) {
-          injuryList.push(injuries[i]);
-        }
+      if (injuryList.indexOf(injuries[i]) === -1) {
+        injuryList.push(injuries[i]);
+      }
     };
   });
 
@@ -433,33 +508,38 @@ const getPairs = array => (
   ], [])
 )
 
-function getJsonArrayIndex(JsonArray, searchKey ,value) {
+function getJsonArrayIndex(JsonArray, searchKey, value) {
   let index = JsonArray.findIndex(function (item, k) {
     return item[searchKey] === value;
   });
   return index;
 }
 
-function pushNodeNeighbor(cause,causeNeighbor){
+function pushNodeNeighbor(cause, causeNeighbor) {
 
-  let index = getJsonArrayIndex(nodeNeighbor,"cause",cause);
+  let index = getJsonArrayIndex(nodeNeighbor, "cause", cause);
 
-  if (index === -1){
+  if (index === -1) {
     nodeNeighbor.push({
       "cause": cause,
       "neighbor": {},
     })
-    let causeIndex = getJsonArrayIndex(nodeNeighbor,"cause",cause);
+    let causeIndex = getJsonArrayIndex(nodeNeighbor, "cause", cause);
     let array = causeNeighbor.split();
     nodeNeighbor[causeIndex]["neighbor"] = array;
 
 
-  } else if (! nodeNeighbor[index].neighbor.includes(causeNeighbor)) {
+  } else if (!nodeNeighbor[index].neighbor.includes(causeNeighbor)) {
     nodeNeighbor[index].neighbor.push(causeNeighbor);
   }
 
 }
 
-function click(data){
-
+function isOutside(node){
+  let coor= node.getBoundingClientRect();
+  if(coor.top <0 || coor.left <0 || coor.bottom <0 || coor.right <0) {
+    return true;
+  } else {
+    return false;
+  }
 }
