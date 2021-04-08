@@ -47,7 +47,7 @@ const causeType = {
   "Judgment": "Human error",
   "Fall or slip": "Human error",
   "Failure to retreat": "Human error",
-  "Unkonwn": "Uncategorized",
+  "Unknown": "Uncategorized",
 }
 
 
@@ -115,7 +115,7 @@ function draw(data) {
 
   svg.attr("viewBox", [-width / 2, -height / 2, width, height]);
 
-  
+
 
 
   const simulation = d3.forceSimulation()
@@ -125,19 +125,19 @@ function draw(data) {
     .force("collide", d3.forceCollide().strength(0.5).radius(70))
     .force("x", d3.forceX())
     .force("y", d3.forceY());
-    //.force("box_force",box_force());
-    /*
-    .force("bouding-box", () => {
-      let nodes = d3.selectAll(".node")._groups[0];
-      for(i = 0; i<nodes.length; i++ ){
-        if (isOutside(nodes[i])){
-          d3.select(nodes[i]).x = 0;
-          d3.select(nodes[i]).y = 0
-        };
+  //.force("box_force",box_force());
+  /*
+  .force("bouding-box", () => {
+    let nodes = d3.selectAll(".node")._groups[0];
+    for(i = 0; i<nodes.length; i++ ){
+      if (isOutside(nodes[i])){
+        d3.select(nodes[i]).x = 0;
+        d3.select(nodes[i]).y = 0
       };
-    });
-    */
-  
+    };
+  });
+  */
+
   //custom force to put stuff in a box 
   function box_force() {
     for (var i = 0, n = data.nodes.length; i < n; ++i) {
@@ -151,8 +151,30 @@ function draw(data) {
   const links = data.links.map(d => Object.create(d));
   const nodes = data.nodes.map(d => Object.create(d));
   //const links = data.links;
-  //const nodes = data.nodes;
+  //const nodes = data.nodes; 
 
+  // tooltip
+  let tooltip = d3.select("body").selectAll("div")
+    .data(nodes).enter()
+    .append("div");
+  tooltip.attr("class", "tooltip").attr("cause", function (d) { return d.id }).attr("show", false).attr("type", function (d) {
+    let cause = d.id;
+    let type = (causeType[cause] === undefined) ? "Uncategorized" : causeType[cause];
+    return type;
+  });
+  let tooltipTitle = tooltip.append("div").attr("class","tooltip-title");
+  tooltipTitle.append("h4").html(function (d) { return d.id });
+  tooltipTitle.append("span").attr("class","cause-type").html(function (d) {
+    let cause = d.id;
+    let type = (causeType[cause] === undefined) ? "Uncategorized" : causeType[cause];
+    return type;
+  })
+  let tooltipList = tooltip.append("div").attr("class","tooltip-list");
+  tooltipList.append("div").attr("class","accident-number");
+  d3.selectAll(".accident-number").append("div").html("Accident Numbers");
+  d3.selectAll(".accident-number").append("div").html(function (d) { return d.value });
+
+  // link
   var link = svg.append("g")
     .attr("class", "links")
     .selectAll("line")
@@ -187,8 +209,11 @@ function draw(data) {
     .attr('x', 0)
     .attr('y', 0);
 
-  node.append("title")
-    .text(function (d) { return d.id; })
+
+  //node.append("title")
+  //  .text(function (d) { return d.id; })
+
+
 
   node.attr("title", function (d) { return d.id; })
     .attr("class", "node cause")
@@ -197,8 +222,8 @@ function draw(data) {
       let type = (causeType[cause] === undefined) ? "Uncategorized" : causeType[cause];
       return type;
     })
-    .on("mouseenter", mouseenter)
-    .on("mouseleave", mouseleave);
+    .on("mouseover", mouseover)
+    .on("mouseout", mouseout);
 
 
   simulation
@@ -215,16 +240,16 @@ function draw(data) {
       .attr("x2", function (d) { return d.target.x; })
       .attr("y2", function (d) { return d.target.y; });
 
-        node
-          .attr("transform", function (d) {
-            return "translate(" + d.x + "," + d.y + ")";
-          });
-
-   /*
     node
-      .attr("cx", function (d) { return d.x = Math.max(15, Math.min(width - 15, d.x)); })
-      .attr("cy", function (d) { return d.y = Math.max(15, Math.min(height - 15, d.y)); });
-*/
+      .attr("transform", function (d) {
+        return "translate(" + d.x + "," + d.y + ")";
+      });
+
+    /*
+     node
+       .attr("cx", function (d) { return d.x = Math.max(15, Math.min(width - 15, d.x)); })
+       .attr("cy", function (d) { return d.y = Math.max(15, Math.min(height - 15, d.y)); });
+ */
 
   }
   // drag and drop
@@ -245,10 +270,11 @@ function draw(data) {
     d.fy = null;
   }
 
-  // mouseenter and mouseleave
-  function mouseenter(event, d) {
+  // mouseover and mouseout
+  function mouseover(event, d) {
     let targetNode = d3.select(this);
-    let cause = targetNode.attr("title");
+    let cause = d.id;
+
     // highlight nodes
     d3.selectAll(".node").attr("highlighted", false);
     targetNode.attr("highlighted", true);
@@ -259,16 +285,22 @@ function draw(data) {
         d3.select('[title="' + causeNeighbors[i] + '"]').attr("highlighted", true);
       }
     }
-
     // highlight links
     d3.selectAll(".link").attr("highlighted", false);
     d3.selectAll('[source="' + cause + '"]').attr("highlighted", true);
     d3.selectAll('[target="' + cause + '"]').attr("highlighted", true);
 
+    // tooltip
+    d3.select('.tooltip[cause="' + cause + '"]').attr("show", true)
+      .style("top", event.pageY + "px")
+      .style("left", event.pageX + "px")
+
+
   }
-  function mouseleave(event, d) {
+  function mouseout(event, d) {
     d3.selectAll(".node").attr("highlighted", null);
     d3.selectAll(".link").attr("highlighted", null);
+    d3.selectAll('.tooltip').attr("show", false);
   }
 
 }
@@ -317,7 +349,7 @@ function drawDetail(data, cause) {
       .on("drag", dragged)
       .on("end", dragended));
 
-  var lables = node.append("text")
+  let lables = node.append("text")
     .text(function (d) {
       return d.data.name;
     })
@@ -535,9 +567,9 @@ function pushNodeNeighbor(cause, causeNeighbor) {
 
 }
 
-function isOutside(node){
-  let coor= node.getBoundingClientRect();
-  if(coor.top <0 || coor.left <0 || coor.bottom <0 || coor.right <0) {
+function isOutside(node) {
+  let coor = node.getBoundingClientRect();
+  if (coor.top < 0 || coor.left < 0 || coor.bottom < 0 || coor.right < 0) {
     return true;
   } else {
     return false;
