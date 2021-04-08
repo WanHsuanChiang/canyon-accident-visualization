@@ -1,0 +1,97 @@
+$cause: #702f2f;
+$accident: #c1c1c1;
+
+html , body {
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+}
+
+#desc {
+    z-index: 100;
+    opacity: 0.5;
+}
+
+#injury-filter {
+    position: absolute;
+    z-index: 1000;
+}
+
+svg {
+    //position: absolute;
+    //left:0;
+    //top:0;
+    width: 100%;
+    height: 100%;
+}
+
+label {
+    z-index: 1000;
+}
+
+.link {
+    stroke: #999;
+    stroke-opacity: 0.6;
+    &[highlighted="true"] {
+        stroke-opacity: 1;
+    }
+    &[highlighted="false"] {
+        stroke-opacity: 0.2;
+    }
+}
+
+.node {
+    @mixin default() {
+        stroke: #fff;
+        stroke-width: 1.5px;
+        cursor: pointer;
+    }
+    circle {
+        @include default();
+    }
+    &.cause {     
+        circle {
+            fill: $cause;
+        }   
+        &[highlighted="true"] circle {
+        }
+        &[highlighted="false"] circle {
+            opacity: 0.2;
+        }
+    }
+    &.detail-cause circle {
+        fill: #2d0d68;
+    }
+    &.accident circle {
+        fill: $accident;
+        r:20;
+    }
+    .cause-label {
+        fill: white;
+    }
+    .detail-label {
+        fill: black;
+    }
+
+}
+
+
+[highlighted="true"] {
+    circle {
+        fill: blue
+    }
+}
+
+[highlighted="false"] {
+    circle {
+        fill: blue
+    }
+}
+  
+
+  
+text {
+    font-family: sans-serif;
+    font-size: 10px;
+}
+
