@@ -70,6 +70,10 @@ svg {
 .node .cause-label {
   fill: white;
   cursor: inherit;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
 }
 
 .node .detail-label {
@@ -82,6 +86,7 @@ text {
 }
 
 .tooltip {
+  width: 200px;
   background-color: white;
   border-width: 1px;
   border-style: solid;
@@ -106,20 +111,20 @@ text {
   border-color: #009d9a;
 }
 
-.tooltip[type="Natural environment"] {
-  border-color: #6929c4;
-}
-
-.tooltip[type="Uncategorized"] {
-  border-color: #012749;
-}
-
 .tooltip[type="Human error"] .cause-type {
   color: #009d9a;
 }
 
+.tooltip[type="Natural environment"] {
+  border-color: #6929c4;
+}
+
 .tooltip[type="Natural environment"] .cause-type {
   color: #6929c4;
+}
+
+.tooltip[type="Uncategorized"] {
+  border-color: #012749;
 }
 
 .tooltip[type="Uncategorized"] .cause-type {
@@ -162,5 +167,73 @@ text {
 
 .tooltip-list > div > div:nth-child(2) {
   margin: 0 0 0 1em;
+}
+
+.tooltip svg {
+  width: calc(200px-2em);
+  height: auto;
+}
+
+.tooltip svg rect {
+  stroke-width: 0.5;
+  stroke: white;
+}
+
+.tooltip svg text {
+  font-size: xx-small;
+}
+
+.injury-chart {
+  width: 150px;
+  height: 200px;
+  margin: 1em 0;
+}
+
+[injury="Fatality"] rect, [injury="Fatality"] text {
+  fill: #67000d;
+}
+
+[injury="Hypothermia"] rect {
+  fill: #970b13;
+}
+
+[injury="Amputation"] rect {
+  fill: #bb151a;
+}
+
+[injury="Fracture"] rect {
+  fill: #d92723;
+}
+
+[injury="Sprain or Strain"] rect {
+  fill: #ef4533;
+}
+
+[injury="Abrasion or Laceration"] rect {
+  fill: #f9694c;
+}
+
+[injury="Concussion or Head Trauma"] rect {
+  fill: #fc8a6b;
+}
+
+[injury="Bruise"] rect {
+  fill: #fcaa8e;
+}
+
+[injury="Dislocation"] rect {
+  fill: #fdc9b4;
+}
+
+[injury="Psychological"] rect {
+  fill: #fee3d6;
+}
+
+[injury="No Injury or Near Miss"] rect {
+  fill: #fff5f0;
+}
+
+[injury="Others"] rect {
+  fill: #cccccc;
 }
 /*# sourceMappingURL=style.css.map */

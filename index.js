@@ -13,6 +13,11 @@ let ctx = {
   GRPAH: null,//cause,detail
   INJURY: null,
 };
+
+let status = {
+  isDragging: false,
+  isHover: false,
+}
 let injuryList = [];
 let nodeNeighbor = [];
 
@@ -50,8 +55,20 @@ const causeType = {
   "Unknown": "Uncategorized",
 }
 
-
-
+const injuryRating = {
+  "Fatality": 11,
+  "Hypothermia": 10,//失溫
+  "Amputation": 9,//截肢
+  "Fracture": 8,//斷裂
+  "Sprain or Strain": 7,//扭傷或拉傷
+  "Abrasion or Laceration": 6,//擦傷或割傷
+  "Concussion or Head Trauma": 5,//腦震盪
+  "Bruise": 4,//瘀青
+  "Dislocation": 3,
+  "Psychological": 2,
+  "No Injury or Near Miss": 1,
+  "Others": 0,
+}
 
 
 //var color = d3.scaleOrdinal(d3.schemeCategory20);
@@ -65,12 +82,10 @@ const causeType = {
 
 d3.csv(dataUrl).then(function (accidentData) {
 
-  let networkData;
   let filteredData;
   let detailedData;
 
-  networkData = getNetworkData(accidentData);
-  draw(networkData);
+  draw(accidentData);
   // TODO
   d3.select('#injury-option')
     .on('change', function () {
@@ -83,6 +98,7 @@ d3.csv(dataUrl).then(function (accidentData) {
     });
 
   d3.selectAll(".node").on("click", function () {
+    d3.selectAll(".tooltip").attr("show", false);
     let cause = d3.select(this).attr('title');
     let regex = "/" + cause + "/";
     let causeData;
@@ -100,6 +116,7 @@ d3.csv(dataUrl).then(function (accidentData) {
   })
 
   drawFilter(injuryList);
+
 });
 
 
@@ -110,8 +127,14 @@ d3.csv(dataUrl).then(function (accidentData) {
 
 function draw(data) {
 
+  let network = getNetworkData(data);
+
   ctx.GRPAH = "cause";
+
+  d3.selectAll("line").exit();
+  d3.select(".nodes").selectAll("g").exit();
   svg.selectAll("*").remove();
+
 
   svg.attr("viewBox", [-width / 2, -height / 2, width, height]);
 
@@ -137,43 +160,43 @@ function draw(data) {
     };
   });
   */
-
-  //custom force to put stuff in a box 
-  function box_force() {
-    for (var i = 0, n = data.nodes.length; i < n; ++i) {
-      let curr_node = data.nodes[i];
-      curr_node.x = Math.max(function (d) { return Math.sqrt(d.value) * 15 }, Math.min(width - function (d) { return Math.sqrt(d.value) * 15 }, curr_node.x));
-      curr_node.y = Math.max(function (d) { return Math.sqrt(d.value) * 15 }, Math.min(height - function (d) { return Math.sqrt(d.value) * 15 }, curr_node.y));
+  /*
+    //custom force to put stuff in a box 
+    function box_force() {
+      for (var i = 0, n = data.nodes.length; i < n; ++i) {
+        let curr_node = data.nodes[i];
+        curr_node.x = Math.max(function (d) { return Math.sqrt(d.value) * 15 }, Math.min(width - function (d) { return Math.sqrt(d.value) * 15 }, curr_node.x));
+        curr_node.y = Math.max(function (d) { return Math.sqrt(d.value) * 15 }, Math.min(height - function (d) { return Math.sqrt(d.value) * 15 }, curr_node.y));
+      }
     }
-  }
+  */
 
-
-  const links = data.links.map(d => Object.create(d));
-  const nodes = data.nodes.map(d => Object.create(d));
+  const links = network.links.map(d => Object.create(d));
+  const nodes = network.nodes.map(d => Object.create(d));
   //const links = data.links;
   //const nodes = data.nodes; 
-
-  // tooltip
-  let tooltip = d3.select("body").selectAll("div")
-    .data(nodes).enter()
-    .append("div");
-  tooltip.attr("class", "tooltip").attr("cause", function (d) { return d.id }).attr("show", false).attr("type", function (d) {
-    let cause = d.id;
-    let type = (causeType[cause] === undefined) ? "Uncategorized" : causeType[cause];
-    return type;
-  });
-  let tooltipTitle = tooltip.append("div").attr("class","tooltip-title");
-  tooltipTitle.append("h4").html(function (d) { return d.id });
-  tooltipTitle.append("span").attr("class","cause-type").html(function (d) {
-    let cause = d.id;
-    let type = (causeType[cause] === undefined) ? "Uncategorized" : causeType[cause];
-    return type;
-  })
-  let tooltipList = tooltip.append("div").attr("class","tooltip-list");
-  tooltipList.append("div").attr("class","accident-number");
-  d3.selectAll(".accident-number").append("div").html("Accident Numbers");
-  d3.selectAll(".accident-number").append("div").html(function (d) { return d.value });
-
+  /*
+    // tooltip
+    let tooltip = d3.select("body").selectAll("div")
+      .data(nodes).enter()
+      .append("div");
+    tooltip.attr("class", "tooltip").attr("cause", function (d) { return d.id }).attr("show", false).attr("type", function (d) {
+      let cause = d.id;
+      let type = (causeType[cause] === undefined) ? "Uncategorized" : causeType[cause];
+      return type;
+    });
+    let tooltipTitle = tooltip.append("div").attr("class", "tooltip-title");
+    tooltipTitle.append("h4").html(function (d) { return d.id });
+    tooltipTitle.append("span").attr("class", "cause-type").html(function (d) {
+      let cause = d.id;
+      let type = (causeType[cause] === undefined) ? "Uncategorized" : causeType[cause];
+      return type;
+    })
+    let tooltipList = tooltip.append("div").attr("class", "tooltip-list");
+    tooltipList.append("div").attr("class", "accident-number");
+    d3.selectAll(".accident-number").append("div").html("Accident Numbers");
+    d3.selectAll(".accident-number").append("div").html(function (d) { return d.value });
+  */
   // link
   var link = svg.append("g")
     .attr("class", "links")
@@ -222,8 +245,8 @@ function draw(data) {
       let type = (causeType[cause] === undefined) ? "Uncategorized" : causeType[cause];
       return type;
     })
-    .on("mouseover", mouseover)
-    .on("mouseout", mouseout);
+    .on("mouseenter", mouseenter)
+    .on("mouseleave", mouseleave);
 
 
   simulation
@@ -252,8 +275,10 @@ function draw(data) {
  */
 
   }
-  // drag and drop
+  // drag and drop  
+
   function dragstarted(event, d) {
+    status.isDragging = true;
     if (!event.active) simulation.alphaTarget(0.3).restart();
     d.fx = event.x;
     d.fy = event.y;
@@ -265,42 +290,61 @@ function draw(data) {
   }
 
   function dragended(event, d) {
+    status.isDragging = false;
     if (!event.active) simulation.alphaTarget(0);
     d.fx = null;
     d.fy = null;
-  }
-
-  // mouseover and mouseout
-  function mouseover(event, d) {
-    let targetNode = d3.select(this);
-    let cause = d.id;
-
-    // highlight nodes
-    d3.selectAll(".node").attr("highlighted", false);
-    targetNode.attr("highlighted", true);
-    let index = getJsonArrayIndex(nodeNeighbor, "cause", cause);
-    if (index !== -1) {
-      let causeNeighbors = nodeNeighbor[index].neighbor;
-      for (i = 0; i < causeNeighbors.length; i++) {
-        d3.select('[title="' + causeNeighbors[i] + '"]').attr("highlighted", true);
-      }
-    }
-    // highlight links
-    d3.selectAll(".link").attr("highlighted", false);
-    d3.selectAll('[source="' + cause + '"]').attr("highlighted", true);
-    d3.selectAll('[target="' + cause + '"]').attr("highlighted", true);
-
-    // tooltip
-    d3.select('.tooltip[cause="' + cause + '"]').attr("show", true)
-      .style("top", event.pageY + "px")
-      .style("left", event.pageX + "px")
-
-
-  }
-  function mouseout(event, d) {
     d3.selectAll(".node").attr("highlighted", null);
     d3.selectAll(".link").attr("highlighted", null);
     d3.selectAll('.tooltip').attr("show", false);
+  }
+
+  // mouseover and mouseout
+  function mouseenter(event, d) {
+
+    if (!status.isDragging) {
+
+      status.isHover = true;
+
+      let targetNode = d3.select(this);
+      let cause = d.id;
+
+      // highlight nodes
+      d3.selectAll(".node").attr("highlighted", false);
+      targetNode.attr("highlighted", true);
+      let index = getJsonArrayIndex(nodeNeighbor, "cause", cause);
+      if (index !== -1) {
+        let causeNeighbors = nodeNeighbor[index].neighbor;
+        for (i = 0; i < causeNeighbors.length; i++) {
+          d3.select('[title="' + causeNeighbors[i] + '"]').attr("highlighted", true);
+        }
+      }
+      // highlight links
+      d3.selectAll(".link").attr("highlighted", false);
+      d3.selectAll('[source="' + cause + '"]').attr("highlighted", true);
+      d3.selectAll('[target="' + cause + '"]').attr("highlighted", true);
+      /*
+            // tooltip
+            d3.select('.tooltip[cause="' + cause + '"]').attr("show", true)
+              .style("top", event.pageY + "px")
+              .style("left", event.pageX + "px")
+              */
+
+      drawTooltip(network.nodes[d.index], data, cause);
+
+
+    }
+
+
+  }
+  function mouseleave(event, d) {
+    if (!status.isDragging) {
+      status.isHover = false;
+      d3.selectAll(".node").attr("highlighted", null);
+      d3.selectAll(".link").attr("highlighted", null);
+      d3.select('.tooltip').remove();
+    }
+
   }
 
 }
@@ -311,7 +355,6 @@ function drawDetail(data, cause) {
 
   ctx.GRPAH = "detail";
   svg.selectAll("*").remove();
-  svg.attr("viewbox", "");
 
 
   const simulation = d3.forceSimulation()
@@ -418,6 +461,137 @@ function drawFilter(array) {
   }
 }
 
+function drawTooltip(nodeData, data, cause) {
+
+  if (status.isHover) {
+
+    let tooltip = d3.select("body").append("div")
+      .attr("class", "tooltip")
+      .attr("cause", nodeData.id)
+      .attr("type", (causeType[nodeData.id] === undefined) ? "Uncategorized" : causeType[nodeData.id]);
+
+    let tooltipTitle = tooltip.append("div").attr("class", "tooltip-title");
+    tooltipTitle.append("h4").html(nodeData.id);
+    tooltipTitle.append("span").attr("class", "cause-type").html((causeType[nodeData.id] === undefined) ? "Uncategorized" : causeType[nodeData.id])
+    let tooltipList = tooltip.append("div").attr("class", "tooltip-list");
+    tooltipList.append("div").attr("class", "accident-number");
+    d3.selectAll(".accident-number").append("div").html("Accident Numbers");
+    d3.selectAll(".accident-number").append("div").html(nodeData.value);
+
+
+    /* draw small injury diagram start*/
+    // https://observablehq.com/@eesur/d3-single-stacked-bar
+
+    // set up data
+    let injuryData = [];
+    let total = nodeData.value;
+    //let total = d3.sum(injuryData, d => d.value);
+
+    // for each accident
+    for (i = 0; i < nodeData.accidents.length; i++) {
+
+      let injuryIndex = getJsonArrayIndex(injuryData, "injury", data[i].injuryMax);
+      if (injuryIndex === -1) {
+        // push
+        injuryData.push({
+          "injury": data[i].injuryMax,
+          "injuryValue": injuryRating[data[i].injuryMax],
+          "value": 1,
+        });
+      } else {
+        // change value
+        let originValue = injuryData[injuryIndex].value;
+        injuryData[injuryIndex].value = originValue + 1;
+      }
+    }
+
+    injuryData.sort(function (a, b) { return -a.injuryValue - -b.injuryValue });
+/*
+    // add cumulative and percentage in injury dataset    
+    for (j = 0; j < injuryData.length; j++) {
+      if (j = 0) {
+        injuryData[j].cumulative= 0;
+      } else {
+        injuryData[j].cumulative = 0;
+      }
+    }
+
+*/
+    // draw
+    // https://codepen.io/nlounds/pen/GzKwt
+
+    let injurySvg = tooltip.append("div").attr("class", "injury-chart")
+      .append("svg")
+      .attr("viewBox", "0 0 50 20")
+      //.attr("preserveAspectRatio", "xMidYMid meet");
+    let injuryBar = injurySvg.selectAll("g")
+      .data(injuryData)
+      .enter().append("g")
+      .attr("injury",function(d){return d.injury});
+
+    let percentSoFar = 0;
+    injuryBar.append("rect")
+      .attr("height","5px")
+      .attr("width", function (d) { return ((d.value / total) * 100) + "%" })
+      .attr("y", 0)
+      .attr("x",function(d){
+        let prePrecent =percentSoFar;
+        let thisPrecent = (d.value / total)*100;
+        percentSoFar = percentSoFar + thisPrecent;
+        return prePrecent + "%";
+      })
+
+    injuryBar.append("text").text(function(d){return d.injury})
+
+
+    /*
+    tooltip.append("svg")
+    .attr("viewbox", "0 0 50 100")
+    //
+    .append("g");
+    */
+
+
+
+    /* determine tooltip position start */
+    let nodeCoords = getCoords('[title="' + cause + '"] circle');
+    let svgCoords = getCoords("#main-chart");
+    let tooltipCoords = getCoords(".tooltip");
+
+    // left = x, top = y
+    // find center coordinates
+    let centerCoords = {
+      cx: (nodeCoords.right - nodeCoords.left) / 2 + nodeCoords.left,
+      cy: (nodeCoords.bottom - nodeCoords.top) / 2 + nodeCoords.top,
+    }
+
+    // determine x
+    let tooltipX;
+    if (centerCoords.cx > svgCoords.x + svgCoords.width / 2) { // at right      
+      tooltipX = nodeCoords.x - tooltipCoords.width - 20;
+    } else { // at left      
+      tooltipX = nodeCoords.right + 20;
+    }
+    // determin y
+    tooltipY = centerCoords.cy - tooltipCoords.height / 2;
+    if (tooltipY < svgCoords.y) { // if the top of tooltip is above svg top
+      tooltipY = svgCoords.y + 20;
+    } else if (tooltipY + tooltipCoords.height > svgCoords.y + svgCoords.height) { // if the bottom of the tooltip is more than svg bottom
+      tooltipY = svgCoords.y + svgCoords.height - tooltipCoords.height - 20;
+    }
+
+    // set up inline postion
+    tooltip
+      .style("left", tooltipX + "px")
+      .style("top", tooltipY + "px");
+
+    /* determine tooltip position end */
+
+  }
+
+
+}
+
 
 
 function find_in_object(my_array, my_criteria) {
@@ -444,6 +618,10 @@ function getNetworkData(raw) {
   raw.forEach(function (d) {
     //deal with cause
     let causes = d.cause.split(",").sort();
+    let injuries = d.injury.split(",").sort();
+    let accident = d.id;
+
+
     for (i = 0; i < causes.length; i++) {
 
       // nodes
@@ -453,16 +631,19 @@ function getNetworkData(raw) {
 
       if (nodeIndex === -1) {
         // if the node is not exist
+
         network.nodes.push({
           "id": cause,
           "cause": cause,
           "type": causeType[cause],
           "value": 1,
+          "accidents": accident.split(),
         });
       } else {
-        // if the node is exist, node value +1
+        // if the node is exist
         let value = network.nodes[nodeIndex].value;
         network.nodes[nodeIndex].value = value + 1;
+        network.nodes[nodeIndex].accidents.push(accident);
       }
 
       // links
@@ -493,7 +674,6 @@ function getNetworkData(raw) {
       }
     }
     // deal with injury
-    let injuries = d.injury.split(",").sort();
     for (i = 0; i < injuries.length; i++) {
       if (injuryList.indexOf(injuries[i]) === -1) {
         injuryList.push(injuries[i]);
@@ -575,3 +755,17 @@ function isOutside(node) {
     return false;
   }
 }
+
+// https://stackoverflow.com/a/28191966
+function getKeyByValue(object, value) {
+  return Object.keys(object).find(key => object[key] === value);
+}
+
+// Adpat from https://stackoverflow.com/a/18561829
+function getCoords(query) {
+
+  let element = document.querySelector(query);
+  let coord = element.getBoundingClientRect();
+  return coord;
+
+};
