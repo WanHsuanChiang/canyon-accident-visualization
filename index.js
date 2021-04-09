@@ -17,6 +17,7 @@ let ctx = {
 let status = {
   isDragging: false,
   isHover: false,
+  isTooltip: false,
 }
 let injuryList = [];
 let nodeNeighbor = [];
@@ -282,6 +283,7 @@ function draw(data) {
     if (!event.active) simulation.alphaTarget(0.3).restart();
     d.fx = event.x;
     d.fy = event.y;
+    d3.select('.tooltip').attr("highlighted", false);
   }
 
   function dragged(event, d) {
@@ -290,13 +292,17 @@ function draw(data) {
   }
 
   function dragended(event, d) {
+    console.log("fire dragend");
     status.isDragging = false;
     if (!event.active) simulation.alphaTarget(0);
     d.fx = null;
     d.fy = null;
     d3.selectAll(".node").attr("highlighted", null);
     d3.selectAll(".link").attr("highlighted", null);
-    d3.selectAll('.tooltip').attr("show", false);
+    d3.select('.tooltip').attr("highlighted", null);
+    if(status.isTooltip){
+      d3.select(".tooltip").remove();
+    }
   }
 
   // mouseover and mouseout
@@ -343,6 +349,7 @@ function draw(data) {
       d3.selectAll(".node").attr("highlighted", null);
       d3.selectAll(".link").attr("highlighted", null);
       d3.select('.tooltip').remove();
+      status.isTooltip = false;  
     }
 
   }
@@ -461,9 +468,11 @@ function drawFilter(array) {
   }
 }
 
-function drawTooltip(nodeData, data, cause) {
+function drawTooltip(nodeData, data, cause) {  
 
   if (status.isHover) {
+
+    status.isTooltip = true;  
 
     let tooltip = d3.select("body").append("div")
       .attr("class", "tooltip")
@@ -546,6 +555,7 @@ function drawTooltip(nodeData, data, cause) {
     .attr("x",function(d){ return d3.select('[injury = "'+d.injury +'"] rect').attr("x") } );  
 
 
+    //injuryLabel.style("transform","translate(300,150) rotate(0)");
 
     /*
     tooltip.append("svg")
@@ -591,7 +601,6 @@ function drawTooltip(nodeData, data, cause) {
     /* determine tooltip position end */
 
   }
-
 
 }
 

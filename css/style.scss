@@ -130,6 +130,9 @@ text {
             color: $uncategorized-color; 
         }
     }
+    &[highlighted="false"] {
+        opacity: 0.3;
+    }
 }
 
 .tooltip-title {
@@ -168,7 +171,7 @@ text {
     //background-color: black;
     //width:calc(100%-2em);
     //height: inherit;
-    width: 200px;
+    width: 150px;
     height: auto;
     rect {
         stroke-width: 0.5;
@@ -182,7 +185,7 @@ text {
 
 .injury-chart {
     //background-color: purple;
-    height: 50px;
+    height: 250px;
     margin: 1em 0;
 }
 

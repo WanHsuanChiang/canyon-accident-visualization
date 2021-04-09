@@ -127,6 +127,10 @@ text {
   color: #012749;
 }
 
+.tooltip[highlighted="false"] {
+  opacity: 0.3;
+}
+
 .tooltip-title {
   margin-bottom: 1em;
 }
@@ -166,7 +170,7 @@ text {
 }
 
 .injury-chart svg {
-  width: 200px;
+  width: 150px;
   height: auto;
 }
 
@@ -180,7 +184,7 @@ text {
 }
 
 .injury-chart {
-  height: 50px;
+  height: 250px;
   margin: 1em 0;
 }
 
