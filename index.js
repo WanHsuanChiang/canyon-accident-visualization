@@ -542,6 +542,9 @@ function drawTooltip(nodeData, data, cause) {
       })
 
     injuryBar.append("text").text(function(d){return d.injury})
+    .attr("y",8 )
+    .attr("x",function(d){ return d3.select('[injury = "'+d.injury +'"] rect').attr("x") } );  
+
 
 
     /*

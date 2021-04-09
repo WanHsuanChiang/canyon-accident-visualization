@@ -81,7 +81,7 @@ svg {
     .cause-label {
         fill: white;
         cursor: inherit;
-        user-select: none;
+        //user-select: none;
     }
     .detail-label {
         fill: black;
@@ -103,7 +103,7 @@ text {
     border-radius: 5px;    
     padding: 1em 1em;
     position: absolute;
-    opacity: 0.7;
+    opacity: 0.9;
     animation: pulse 10s infinite;
     &[show=true]{
         z-index: 1000;
@@ -164,64 +164,87 @@ text {
     }    
 }
 
-.tooltip svg {
+.injury-chart svg {
     //background-color: black;
     //width:calc(100%-2em);
     //height: inherit;
-    width: calc(200px-2em);
+    width: 200px;
     height: auto;
     rect {
         stroke-width: 0.5;
         stroke: white;
     }
     text {
-        font-size: xx-small;
+        font-size: 3px;
     }
 
 }
 
 .injury-chart {
     //background-color: purple;
-    width: 150px;
-    height: 200px;
+    height: 50px;
     margin: 1em 0;
 }
 
+
+
 [injury = "Fatality"] {
-    rect , text {
+    rect  {
         fill: #67000d;
     } 
 }
-[injury = "Hypothermia"] rect{
-    fill: #970b13;
+[injury = "Hypothermia"] {
+    rect  {
+        fill: #970b13;
+    }     
 }
-[injury = "Amputation"] rect{
-    fill: #bb151a;
+[injury = "Amputation"]{
+    rect{
+        fill: #bb151a;
+    } 
 }
-[injury = "Fracture"] rect{
-    fill: #d92723;
+[injury = "Fracture"] {
+    rect  {
+        fill: #d92723;
+    }     
 }
-[injury = "Sprain or Strain"] rect{
-    fill: #ef4533;
+[injury = "Sprain or Strain"] {
+    rect  {
+        fill: #ef4533;
+    }
 }
-[injury = "Abrasion or Laceration"] rect{
-    fill: #f9694c;
+[injury = "Abrasion or Laceration"] {
+    rect {
+        fill: #f9694c;
+    }    
 }
-[injury = "Concussion or Head Trauma"] rect{
-    fill: #fc8a6b;
+[injury = "Concussion or Head Trauma"] {
+    rect  {
+        fill: #fc8a6b;
+    } 
 }
-[injury = "Bruise"] rect{
-    fill: #fcaa8e;
+[injury = "Bruise"] {
+    rect  {
+        fill: #fcaa8e;
+    } 
 }
-[injury = "Dislocation"] rect{
+[injury = "Dislocation"] {
+    rect  {
     fill: #fdc9b4;    
+    }
 }
-[injury = "Psychological"] rect{
+[injury = "Psychological"] {
+    rect {
     fill: #fee3d6;
+    }
 }
-[injury = "No Injury or Near Miss"] rect{
+[injury = "No Injury or Near Miss"]{
+    rect  {
     fill: #fff5f0;
+    }
 }
-[injury = "Others"] rect{
+[injury = "Others"] {
+    rect  {
     fill: #cccccc;
+    }
 }

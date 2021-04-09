@@ -70,10 +70,6 @@ svg {
 .node .cause-label {
   fill: white;
   cursor: inherit;
-  -webkit-user-select: none;
-     -moz-user-select: none;
-      -ms-user-select: none;
-          user-select: none;
 }
 
 .node .detail-label {
@@ -93,7 +89,7 @@ text {
   border-radius: 5px;
   padding: 1em 1em;
   position: absolute;
-  opacity: 0.7;
+  opacity: 0.9;
   -webkit-animation: pulse 10s infinite;
           animation: pulse 10s infinite;
 }
@@ -169,27 +165,26 @@ text {
   margin: 0 0 0 1em;
 }
 
-.tooltip svg {
-  width: calc(200px-2em);
+.injury-chart svg {
+  width: 200px;
   height: auto;
 }
 
-.tooltip svg rect {
+.injury-chart svg rect {
   stroke-width: 0.5;
   stroke: white;
 }
 
-.tooltip svg text {
-  font-size: xx-small;
+.injury-chart svg text {
+  font-size: 3px;
 }
 
 .injury-chart {
-  width: 150px;
-  height: 200px;
+  height: 50px;
   margin: 1em 0;
 }
 
-[injury="Fatality"] rect, [injury="Fatality"] text {
+[injury="Fatality"] rect {
   fill: #67000d;
 }
 
