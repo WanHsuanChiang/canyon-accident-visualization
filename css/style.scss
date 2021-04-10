@@ -171,7 +171,7 @@ text {
     //background-color: black;
     //width:calc(100%-2em);
     //height: inherit;
-    width: 150px;
+    width: 200px;
     height: auto;
     rect {
         stroke-width: 0.5;
@@ -185,68 +185,68 @@ text {
 
 .injury-chart {
     //background-color: purple;
-    height: 250px;
+    height: 50px;
     margin: 1em 0;
 }
 
 
 
-[injury = "Fatality"] {
+[injury-max = "Fatality"] {
     rect  {
         fill: #67000d;
     } 
 }
-[injury = "Hypothermia"] {
+[injury-max = "Hypothermia"] {
     rect  {
         fill: #970b13;
     }     
 }
-[injury = "Amputation"]{
+[injury-max = "Amputation"]{
     rect{
         fill: #bb151a;
     } 
 }
-[injury = "Fracture"] {
+[injury-max = "Fracture"] {
     rect  {
         fill: #d92723;
     }     
 }
-[injury = "Sprain or Strain"] {
+[injury-max = "Sprain or Strain"] {
     rect  {
         fill: #ef4533;
     }
 }
-[injury = "Abrasion or Laceration"] {
+[injury-max = "Abrasion or Laceration"] {
     rect {
         fill: #f9694c;
     }    
 }
-[injury = "Concussion or Head Trauma"] {
+[injury-max = "Concussion or Head Trauma"] {
     rect  {
         fill: #fc8a6b;
     } 
 }
-[injury = "Bruise"] {
+[injury-max = "Bruise"] {
     rect  {
         fill: #fcaa8e;
     } 
 }
-[injury = "Dislocation"] {
+[injury-max = "Dislocation"] {
     rect  {
     fill: #fdc9b4;    
     }
 }
-[injury = "Psychological"] {
+[injury-max = "Psychological"] {
     rect {
     fill: #fee3d6;
     }
 }
-[injury = "No Injury or Near Miss"]{
+[injury-max = "No Injury or Near Miss"]{
     rect  {
     fill: #fff5f0;
     }
 }
-[injury = "Others"] {
+[injury-max = "Others"] {
     rect  {
     fill: #cccccc;
     }

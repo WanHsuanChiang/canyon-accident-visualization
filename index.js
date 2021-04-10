@@ -15,6 +15,7 @@ let ctx = {
 };
 
 let status = {
+  screen: null,
   isDragging: false,
   isHover: false,
   isTooltip: false,
@@ -97,7 +98,7 @@ d3.csv(dataUrl).then(function (accidentData) {
       })
       draw(getNetworkData(filteredData));
     });
-
+/*
   d3.selectAll(".node").on("click", function () {
     d3.selectAll(".tooltip").attr("show", false);
     let cause = d3.select(this).attr('title');
@@ -115,6 +116,7 @@ d3.csv(dataUrl).then(function (accidentData) {
     detailedData = getTreeData(causeData, cause);
     drawDetail(detailedData, cause);
   })
+  */
 
   drawFilter(injuryList);
 
@@ -123,14 +125,12 @@ d3.csv(dataUrl).then(function (accidentData) {
 
 // draw function
 // https://bl.ocks.org/heybignick/3faf257bbbbc7743bb72310d03b86ee8
-
-
-
 function draw(data) {
 
   let network = getNetworkData(data);
 
   ctx.GRPAH = "cause";
+  status.screen = "cause";
 
   d3.selectAll("line").exit();
   d3.select(".nodes").selectAll("g").exit();
@@ -176,28 +176,7 @@ function draw(data) {
   const nodes = network.nodes.map(d => Object.create(d));
   //const links = data.links;
   //const nodes = data.nodes; 
-  /*
-    // tooltip
-    let tooltip = d3.select("body").selectAll("div")
-      .data(nodes).enter()
-      .append("div");
-    tooltip.attr("class", "tooltip").attr("cause", function (d) { return d.id }).attr("show", false).attr("type", function (d) {
-      let cause = d.id;
-      let type = (causeType[cause] === undefined) ? "Uncategorized" : causeType[cause];
-      return type;
-    });
-    let tooltipTitle = tooltip.append("div").attr("class", "tooltip-title");
-    tooltipTitle.append("h4").html(function (d) { return d.id });
-    tooltipTitle.append("span").attr("class", "cause-type").html(function (d) {
-      let cause = d.id;
-      let type = (causeType[cause] === undefined) ? "Uncategorized" : causeType[cause];
-      return type;
-    })
-    let tooltipList = tooltip.append("div").attr("class", "tooltip-list");
-    tooltipList.append("div").attr("class", "accident-number");
-    d3.selectAll(".accident-number").append("div").html("Accident Numbers");
-    d3.selectAll(".accident-number").append("div").html(function (d) { return d.value });
-  */
+
   // link
   var link = svg.append("g")
     .attr("class", "links")
@@ -237,8 +216,6 @@ function draw(data) {
   //node.append("title")
   //  .text(function (d) { return d.id; })
 
-
-
   node.attr("title", function (d) { return d.id; })
     .attr("class", "node cause")
     .attr("type", function (d) {
@@ -247,7 +224,8 @@ function draw(data) {
       return type;
     })
     .on("mouseenter", mouseenter)
-    .on("mouseleave", mouseleave);
+    .on("mouseleave", mouseleave)
+    .on("click", click );
 
 
   simulation
@@ -275,9 +253,8 @@ function draw(data) {
        .attr("cy", function (d) { return d.y = Math.max(15, Math.min(height - 15, d.y)); });
  */
 
-  }
-  // drag and drop  
-
+  };
+  // drag and drop 
   function dragstarted(event, d) {
     status.isDragging = true;
     if (!event.active) simulation.alphaTarget(0.3).restart();
@@ -353,6 +330,49 @@ function draw(data) {
     }
 
   }
+
+  // click
+  function click(d) {
+
+    let clickedNode = d3.select(this);
+
+    status.screen = "detail";
+
+    if (screen)
+    // what it passed? d?\ 
+    d3.selectAll(".nodes").data(data).exit(); 
+    d3.selectAll(".links").data(data).exit();
+    d3.selectAll(".links").remove();
+    d3.selectAll('.node:not([title="'+clickedNode.attr("title")+'"])').remove();
+
+    //simulation.stop();
+
+    console.log(data.filter(function(d){return d.cause.includes(   clickedNode.attr("title")  )        }));
+
+    //drawDetail(data.filter(function(d){return d.cause.includes(   d3.select(this).attr("title")  )        }));
+ 
+
+
+    /*
+  d3.selectAll(".node").on("click", function () {
+    d3.selectAll(".tooltip").attr("show", false);
+    let cause = d3.select(this).attr('title');
+    let regex = "/" + cause + "/";
+    let causeData;
+    if (ctx.INJURY === null) {
+      causeData = accidentData.filter(function (d) {
+        return d["cause"].includes(cause);
+      });
+    } else {
+      causeData = accidentData.filter(function (d) {
+        return d["cause"].match(regex) && d["injury"].includes(ctx.INJURY);
+      });
+    }
+    detailedData = getTreeData(causeData, cause);
+    drawDetail(detailedData, cause);
+  })
+  */
+  };
 
 }
 
@@ -470,7 +490,7 @@ function drawFilter(array) {
 
 function drawTooltip(nodeData, data, cause) {  
 
-  if (status.isHover) {
+  if (status.isHover && status.screen === "cause") {
 
     status.isTooltip = true;  
 
@@ -536,7 +556,7 @@ function drawTooltip(nodeData, data, cause) {
     let injuryBar = injurySvg.selectAll("g")
       .data(injuryData)
       .enter().append("g")
-      .attr("injury",function(d){return d.injury});
+      .attr("injury-max",function(d){return d.injury});
 
     let percentSoFar = 0;
     injuryBar.append("rect")
@@ -552,7 +572,7 @@ function drawTooltip(nodeData, data, cause) {
 
     injuryBar.append("text").text(function(d){return d.injury})
     .attr("y",8 )
-    .attr("x",function(d){ return d3.select('[injury = "'+d.injury +'"] rect').attr("x") } );  
+    .attr("x",function(d){ return d3.select('[injury-max = "'+d.injury +'"] rect').attr("x") } );  
 
 
     //injuryLabel.style("transform","translate(300,150) rotate(0)");
@@ -692,6 +712,85 @@ function getNetworkData(raw) {
       }
     };
   });
+
+  return network;
+}
+
+// transform raw data to detailed node-link dataset (accident and cause)
+function getAccidentNetworkData(data) {
+
+  let network = {
+    "nodes": [],
+    "links": []
+  };
+
+  let accidentNodes = [];
+  let causeNodes = [];
+
+  data.forEach(function (d) {
+    //deal with cause
+    let detailCauses = d.detailCause.split(",").sort();
+    let injuries = d.injury.split(",").sort();    
+
+    // accident nodes
+    
+    accidentNodes.push({
+      "id": d.id, // accident id
+      "name": d.canyon,
+      "value": 1,
+      "category": "accident",
+      "date": d.date,
+      /*
+      "detailCause": d.detailCause,
+      "injury": d.injury.split(),
+      "injuryMax": d.injuryMax,      
+      "area": d.area,
+      "country": d.country,
+      "canyonRatingACA": d.difficulty.split("(")[0].trim(),
+      "canyonRatingFR": d.difficulty.split("(")[1].split(")")[0].trim(),
+      "hasSwiftWater": d.difficulty.includes("Swift water"),
+      "canyonUrl": d.canyonUrl,
+      "accidentUrl": d.url,
+      */
+    })
+    
+    for (i = 0; i < detailCauses.length; i++) {
+
+      // cause nodes
+
+      let detailCause = detailCauses[i];
+      let nodeIndex = getJsonArrayIndex(causeNodes, "id", detailCause);
+
+      if (nodeIndex === -1) {
+        // if the node is not exist
+
+        causeNodes.push({
+          "id": detailCause,
+          "name": detailCause,
+          "category": "cause",
+          "value": 1,
+          "accidents": d.id.split(),
+        });
+      } else {
+        // if the node is exist
+        let value = network.nodes[nodeIndex].value;
+        causeNodes[nodeIndex].value = value + 1;
+        causeNodes[nodeIndex].accidents.push(d.id);
+      }
+
+      // links
+
+      network.links.push({
+        "source": d.id,
+        "target": d.detailCause,
+        "value": 1,
+      });
+    }
+  });
+
+  network.nodes = causeNodes.concat(accidentNodes);
+
+  console.log(network);
 
   return network;
 }
