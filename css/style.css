@@ -23,14 +23,26 @@ svg {
 .link {
   stroke: #999;
   stroke-opacity: 0.6;
+  /*
+    &[highlighted="true"] {
+        stroke-opacity: 1;
+    }
+    &[highlighted="false"] {
+        stroke-opacity: 0.1;
+    }
+    */
 }
 
-.link[highlighted="true"] {
-  stroke-opacity: 1;
+[highlighted=false] {
+  opacity: 0.2;
 }
 
-.link[highlighted="false"] {
+[highlighted=false].link {
   stroke-opacity: 0.1;
+}
+
+[highlighted=true].link {
+  stroke-opacity: 1;
 }
 
 .node {
@@ -234,5 +246,17 @@ text {
 
 [injury-max="Others"] rect {
   fill: #cccccc;
+}
+
+#detail-chart [category=accident] circle {
+  fill: red;
+}
+
+#detail-chart [category=cause] circle {
+  fill: blue;
+}
+
+.dummy {
+  visibility: hidden;
 }
 /*# sourceMappingURL=style.css.map */

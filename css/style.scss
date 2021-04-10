@@ -33,13 +33,31 @@ svg {
 .link {
     stroke: #999;
     stroke-opacity: 0.6;
+    /*
     &[highlighted="true"] {
         stroke-opacity: 1;
     }
     &[highlighted="false"] {
         stroke-opacity: 0.1;
     }
+    */
 }
+
+[highlighted=false] {
+    opacity: 0.2;
+    &.link {
+        stroke-opacity: 0.1;
+    }
+}
+[highlighted=true]{
+    &.link {
+        stroke-opacity: 1;
+    }
+} 
+
+
+
+
 
 .node {
     cursor: pointer;
@@ -53,8 +71,7 @@ svg {
         @include default();
     }
     &.cause {
-        &[highlighted="true"] circle {
-        }
+
         &[highlighted="false"] circle {
             opacity: 0.2;
         }
@@ -250,4 +267,22 @@ text {
     rect  {
     fill: #cccccc;
     }
+}
+
+
+#detail-chart {
+    
+    [category = accident]{
+        circle {
+            fill: red;
+        }
+    }
+    [category = cause]{
+        circle {
+            fill: blue;
+        }
+    }
+}
+.dummy {
+    visibility: hidden;
 }
