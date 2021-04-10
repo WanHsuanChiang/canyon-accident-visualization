@@ -2,6 +2,7 @@ html, body {
   height: 100vh;
   margin: 0;
   padding: 0;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
 }
 
 #desc {
@@ -45,10 +46,6 @@ svg {
   stroke-opacity: 1;
 }
 
-.node {
-  cursor: pointer;
-}
-
 .node circle {
   stroke: #fff;
   stroke-width: 1.5px;
@@ -89,12 +86,10 @@ svg {
 }
 
 text {
-  font-family: sans-serif;
   font-size: 10px;
 }
 
 .tooltip {
-  width: 200px;
   background-color: white;
   border-width: 1px;
   border-style: solid;
@@ -104,6 +99,14 @@ text {
   opacity: 0.9;
   -webkit-animation: pulse 10s infinite;
           animation: pulse 10s infinite;
+}
+
+.tooltip.main-cause-tooltip {
+  width: 200px;
+}
+
+.tooltip.accident-tooltip {
+  width: 400px;
 }
 
 .tooltip[show=true] {
@@ -200,56 +203,52 @@ text {
   margin: 1em 0;
 }
 
-[injury-max="Fatality"] rect {
+[injury-max="Fatality"] rect, [injury-max="Fatality"] circle {
   fill: #67000d;
 }
 
-[injury-max="Hypothermia"] rect {
+[injury-max="Hypothermia"] rect, [injury-max="Hypothermia"] circle {
   fill: #970b13;
 }
 
-[injury-max="Amputation"] rect {
+[injury-max="Amputation"] rect, [injury-max="Amputation"] circle {
   fill: #bb151a;
 }
 
-[injury-max="Fracture"] rect {
+[injury-max="Fracture"] rect, [injury-max="Fracture"] circle {
   fill: #d92723;
 }
 
-[injury-max="Sprain or Strain"] rect {
+[injury-max="Sprain or Strain"] rect, [injury-max="Sprain or Strain"] circle {
   fill: #ef4533;
 }
 
-[injury-max="Abrasion or Laceration"] rect {
+[injury-max="Abrasion or Laceration"] rect, [injury-max="Abrasion or Laceration"] circle {
   fill: #f9694c;
 }
 
-[injury-max="Concussion or Head Trauma"] rect {
+[injury-max="Concussion or Head Trauma"] rect, [injury-max="Concussion or Head Trauma"] circle {
   fill: #fc8a6b;
 }
 
-[injury-max="Bruise"] rect {
+[injury-max="Bruise"] rect, [injury-max="Bruise"] circle {
   fill: #fcaa8e;
 }
 
-[injury-max="Dislocation"] rect {
+[injury-max="Dislocation"] rect, [injury-max="Dislocation"] circle {
   fill: #fdc9b4;
 }
 
-[injury-max="Psychological"] rect {
+[injury-max="Psychological"] rect, [injury-max="Psychological"] circle {
   fill: #fee3d6;
 }
 
-[injury-max="No Injury or Near Miss"] rect {
+[injury-max="No Injury or Near Miss"] rect, [injury-max="No Injury or Near Miss"] circle {
   fill: #fff5f0;
 }
 
-[injury-max="Others"] rect {
+[injury-max="Others"] rect, [injury-max="Others"] circle {
   fill: #cccccc;
-}
-
-#detail-chart [category=accident] circle {
-  fill: red;
 }
 
 #detail-chart [category=cause] circle {
