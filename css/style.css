@@ -46,6 +46,18 @@ svg {
   stroke-opacity: 1;
 }
 
+[type="Human error"] circle {
+  fill: #009d9a;
+}
+
+[type="Natural environment"] circle {
+  fill: #6929c4;
+}
+
+[type="Uncategorized"] circle {
+  fill: #012749;
+}
+
 .node circle {
   stroke: #fff;
   stroke-width: 1.5px;
@@ -53,18 +65,6 @@ svg {
 
 .node.cause[highlighted="false"] circle {
   opacity: 0.2;
-}
-
-.node.cause[type="Human error"] circle {
-  fill: #009d9a;
-}
-
-.node.cause[type="Natural environment"] circle {
-  fill: #6929c4;
-}
-
-.node.cause[type="Uncategorized"] circle {
-  fill: #012749;
 }
 
 .node.detail-cause circle {
@@ -249,10 +249,6 @@ text {
 
 [injury-max="Others"] rect, [injury-max="Others"] circle {
   fill: #cccccc;
-}
-
-#detail-chart [category=cause] circle {
-  fill: blue;
 }
 
 .dummy {

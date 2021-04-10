@@ -58,6 +58,17 @@ svg {
 
 
 
+[type = "Human error"] circle {
+    fill: $human-color;
+}
+[type = "Natural environment"] circle {
+    fill: $natural-color;
+}
+[type = "Uncategorized"] circle {
+    fill: $uncategorized-color
+}
+
+
 
 
 .node {
@@ -76,15 +87,7 @@ svg {
         &[highlighted="false"] circle {
             opacity: 0.2;
         }
-        &[type = "Human error"] circle {
-            fill: $human-color;
-        }
-        &[type = "Natural environment"] circle {
-            fill: $natural-color;
-        }
-        &[type = "Uncategorized"] circle {
-            fill: $uncategorized-color
-        }
+
     }   
 
 
@@ -280,19 +283,6 @@ text {
 }
 
 
-#detail-chart {
-    
-    [category = accident]{
-        circle {
-            //fill: red;
-        }
-    }
-    [category = cause]{
-        circle {
-            fill: blue;
-        }
-    }
-}
 .dummy {
     visibility: hidden;
 }

@@ -152,9 +152,37 @@ function draw(data) {
     .force("link", d3.forceLink().id(d => d.id))
     .force("charge", d3.forceManyBody().strength(-400))
     .force("center", d3.forceCenter(0, 0))
-    .force("collide", d3.forceCollide().strength(0.5).radius(function (d) { return Math.sqrt(d.value) * 15+20; })) // radius
+    .force("collide", d3.forceCollide().strength(0.5).radius(function (d) { return Math.sqrt(d.value) * 15 + 20; })) // radius
+    //.force("collide", d3.forceCollide().strength(0.5).radius(80)) // radius
     .force("x", d3.forceX().x(d => d.x))
     .force("y", d3.forceY(height / 2));
+
+    /*
+    .force("bounding-box", () => {
+
+      nodes.forEach(node => {
+        if (isOutside(node).boolean) {
+          let offset = 4;
+          if (isOutside(node).position.horizontal === "left") {
+            node.x = node.x + offset;
+          } else if (isOutside(node).position.horizontal === "right") {
+            node.x = node.x - offset;
+          } else {
+            node.x = node.x;
+          }
+          if (isOutside(node).position.vertical === "top") {
+            node.y = node.y + offset;
+          } else if (isOutside(node).position.vertical === "bottom") {
+            node.y = node.y - offset;
+          } else {
+            node.y = node.y;
+          }
+        }
+      })
+
+
+    });
+*/
   //.force("box_force",box_force());
   /*
   .force("bouding-box", () => {
@@ -217,7 +245,7 @@ function draw(data) {
     .attr("class", "cause-label")
     .attr('x', 0)
     .attr('y', 0)
-    .style("font-size", function(d){return Math.sqrt(d.value)*4 + "px"});
+    .style("font-size", function (d) { return Math.sqrt(d.value) * 4 + "px" });
 
 
   //node.append("title")
@@ -340,14 +368,12 @@ function draw(data) {
   // click
   function click(d) {
 
+    let clickedNode = d3.select(this);
+
     if (status.screen === "cause") {
-
-
-      let clickedNode = d3.select(this);
 
       status.screen = "detail";
 
-      // what it passed? d?\ 
       d3.selectAll(".nodes").data(data).exit();
       d3.selectAll(".links").data(data).exit();
       d3.selectAll(".links").remove();
@@ -366,6 +392,10 @@ function draw(data) {
 
       drawDetail(data.filter(function (d) { return d.cause.includes(clickedNode.attr("title")) }), clickedNode.attr("title")); // (data, cause)
       //drawChord(data.filter(function (d) { return d.cause.includes(clickedNode.attr("title")) }));
+
+    } else {
+      status.screen = "cause";
+      draw(data);
     }
 
   };
@@ -522,8 +552,6 @@ function drawChord(data) {
 
 function drawDetail(data, cause) {
 
-  console.log(data);
-
   status.isHover = false;
   status.isTooltip = false;
   d3.select(".tooltip").remove();
@@ -534,8 +562,6 @@ function drawDetail(data, cause) {
   d3.select('[title = "' + cause + '"]').attr("class", d3.select('[title = "' + cause + '"]').attr("class") + " center-node");
 
   let network = getAccidentNetworkData(data, cause);
-
-  console.log(network.nodes);
 
 
   const links = network.links.map(d => Object.create(d));
@@ -578,9 +604,12 @@ function drawDetail(data, cause) {
     .enter().append("g")
     .attr("category", function (d) { return d.category })
     .attr("name", function (d) { return d.id })
-    .attr("class", function (d) { return (d.id === "dummy") ? "node dummy" : "node"; })
-    .attr("injury-max", function(d){return d.injuryMax});
+    .attr("class", function (d) { return (d.id === "dummy") ? "node dummy" : "node"; });
 
+  d3.selectAll('[category="accident"]').attr("injury-max",function(d){return d.injuryMax});
+  d3.selectAll('[category="cause"]').attr("type",function(d){return getCauseType(d.id)});
+
+  
 
   let circles = node.append("circle")
     .attr("r", function (d) {
@@ -594,7 +623,7 @@ function drawDetail(data, cause) {
       .on("end", dragended));
 
   let labels = node.append("text")
-    .text(function (d) { return (d.category === "accident")?d.canyon + " ("+d.date+")":d.id;})
+    .text(function (d) { return (d.category === "accident") ? d.canyon + " (" + d.date + ")" : d.id; })
     .attr("text-anchor", "middle")
     .attr("class", "label")
     .attr('x', 0)
@@ -665,7 +694,6 @@ function drawDetail(data, cause) {
 
       let targetCircle = d3.select(this);
       let targetNode = d3.select(this.parentNode);
-      console.log(d);
 
       // highlight nodes
       d3.selectAll(".node").attr("highlighted", false);
@@ -673,7 +701,7 @@ function drawDetail(data, cause) {
       d3.select(".center-node").attr("highlighted", true);
 
 
-      if (targetNode.attr("category") === "accident") {        
+      if (targetNode.attr("category") === "accident") {
         // highlight cause
         let index = getJsonArrayIndex(data, "id", d.id); // find accident data from dataset
         for (i = 0; i < data[index].detailCause.split(",").length; i++) {
@@ -690,9 +718,9 @@ function drawDetail(data, cause) {
       d3.selectAll('[source="' + d.id + '"]').attr("highlighted", true);
       d3.selectAll('[target="' + d.id + '"]').attr("highlighted", true);
 
-      if (targetNode.attr("category") === "accident"){
+      if (targetNode.attr("category") === "accident") {
         drawAccidentTooltip(network.nodes[d.index], data);
-      }    
+      }
 
 
     }
@@ -963,8 +991,6 @@ function drawTooltip(nodeData, data, cause) {
 
 function drawAccidentTooltip(nodeData, data) {
 
-  console.log(nodeData);
-
   if (status.isHover && status.screen === "detail" && nodeData.category === "accident" && !status.isTooltip) {
 
     status.isTooltip = true;
@@ -986,15 +1012,15 @@ function drawAccidentTooltip(nodeData, data) {
     tooltipList.append("div").attr("class", "location");
     d3.select(".location").append("div").html("Location");
     let locationString = d3.select(".location").append("div");
-    if (nodeData.canyonUrl.includes("http")){
-      locationString.html('<a href="'+nodeData.canyonUrl+'" target="_blank">'+ nodeData.canyon + '</a>, ' + nodeData.area + ', ' + nodeData.country);
+    if (nodeData.canyonUrl.includes("http")) {
+      locationString.html('<a href="' + nodeData.canyonUrl + '" target="_blank">' + nodeData.canyon + '</a>, ' + nodeData.area + ', ' + nodeData.country);
     } else {
-      locationString.html(nodeData.canyon +', ' + nodeData.area + ', ' + nodeData.country);
+      locationString.html(nodeData.canyon + ', ' + nodeData.area + ', ' + nodeData.country);
     }
     // canyon rating
     tooltipList.append("div").attr("class", "rating");
     d3.select(".rating").append("div").html("Canyon Rating");
-    d3.select(".rating").append("div").html((filter.canyonRating === "FR")?nodeData.canyonRatingFR:nodeData.canyonRatingACA );
+    d3.select(".rating").append("div").html((filter.canyonRating === "FR") ? nodeData.canyonRatingFR : nodeData.canyonRatingACA);
 
 
 
@@ -1419,7 +1445,7 @@ function getAccidentNetworkData(data, cause) {
       "detailCause": d.detailCause,
       "injury": d.injury.split(),
       "injuryMax": d.injuryMax,
-      "injuryValue": injuryRating[d.injuryMax],    
+      "injuryValue": injuryRating[d.injuryMax],
       "area": d.area,
       "country": d.country,
       "canyonRatingACA": d.difficultyACA,
@@ -1617,12 +1643,49 @@ function pushNodeNeighbor(cause, causeNeighbor) {
 }
 
 function isOutside(node) {
-  let coor = node.getBoundingClientRect();
-  if (coor.top < 0 || coor.left < 0 || coor.bottom < 0 || coor.right < 0) {
-    return true;
-  } else {
-    return false;
+
+  let position = {
+    "horizontal": null,
+    "vertical": null,
+  };
+  let boolean = false;
+
+  let nodeCoords;
+  try {
+    if (status.screen = "cause") {
+      nodeCoords = getCoords('[title="' + node.__proto__.id + '"]');
+    } else {
+      nodeCoords = getCoords('[name="' + node.__proto__.id + '"]');
+    }
+    let svgCoords = getCoords("svg");
+
+    if (nodeCoords.x > svgCoords.x + svgCoords.width) {
+      boolean = true;
+      position.horizontal = "right";
+    } else if (nodeCoords.x < svgCoords.x) {
+      boolean = true;
+      position.horizontal = "left";
+    }
+    if (nodeCoords.y > svgCoords.y + svgCoords.height) {
+      boolean = true;
+      position.vertical = "bottom";
+    } else if (nodeCoords.y < svgCoords.y) {
+      boolean = true;
+      position.vertical = "top";
+    }
+    
+  } catch {
+
+    console.log("isOutside error");
+    console.log(document.querySelector('[name="' + node.__proto__.id + '"]').getBoundingClientRect());
+
   }
+
+  return {
+    "boolean": boolean,
+    "position": position,
+  };
+  
 }
 
 // https://stackoverflow.com/a/28191966
@@ -1650,3 +1713,30 @@ function array_move(arr, old_index, new_index) {
   arr.splice(new_index, 0, arr.splice(old_index, 1)[0]);
   return arr; // for testing
 };
+
+function getCauseType(detailCause) {
+  let type;
+  let naturalCauses = [
+    "Water",
+    "SwiftWater",
+    "Swiftwater",
+    "Swift water",
+    "Fash Flood",
+    "Flash flood",
+    "High water flow",
+    "Weather",
+    "Rockfall",
+    "Rock fall",
+    "Darkness",
+    "Excessive and slippery mud",
+    "Exhaustion",
+    "Hydraulic",
+    "Hypothermia",
+  ]
+  if (detailCause === "Unknown" || detailCause === "unknown") {
+    type = "Unknown";
+  } else {
+    type = (naturalCauses.includes(detailCause))?"Natural environment": "Human error" ; 
+  }
+  return type
+}
