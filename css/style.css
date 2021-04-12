@@ -58,6 +58,25 @@ svg {
   fill: #012749;
 }
 
+#main-chart .node {
+  cursor: pointer;
+}
+
+#main-chart .node[drag=true] {
+  cursor: -webkit-grabbing;
+  cursor: grabbing;
+}
+
+#detail-chart .node {
+  cursor: -webkit-grab;
+  cursor: grab;
+}
+
+#detail-chart .node circle[drag=true] {
+  cursor: -webkit-grabbing;
+  cursor: grabbing;
+}
+
 .node circle {
   stroke: #fff;
   stroke-width: 1.5px;

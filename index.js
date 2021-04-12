@@ -246,12 +246,8 @@ function draw(data) {
 
   var circles = node.append("circle")
     .attr("r", function (d) { return Math.sqrt(d.value) * 15; })
-    //.attr("class", function (d) { return d.group; })
-    //.attr("fill", function(d) { return color(d.group); })    
-    .call(d3.drag()
-      .on("start", dragstarted)
-      .on("drag", dragged)
-      .on("end", dragended));
+  //.attr("class", function (d) { return d.group; })
+  //.attr("fill", function(d) { return color(d.group); })    
 
   let lables = node.append("text")
     .text(function (d) {
@@ -274,6 +270,11 @@ function draw(data) {
       let type = (causeType[cause] === undefined) ? "Uncategorized" : causeType[cause];
       return type;
     })
+    .attr("drag", false)
+    .call(d3.drag()
+      .on("start", dragstarted)
+      .on("drag", dragged)
+      .on("end", dragended))
     .on("mouseenter", mouseenter)
     .on("mouseleave", mouseleave)
     .on("click", click);
@@ -307,6 +308,7 @@ function draw(data) {
   };
   // drag and drop 
   function dragstarted(event, d) {
+    d3.select(this).attr("drag", true);
     status.isDragging = true;
     if (!event.active) simulation.alphaTarget(0.3).restart();
     d.fx = event.x;
@@ -320,6 +322,7 @@ function draw(data) {
   }
 
   function dragended(event, d) {
+    d3.select(this).attr("drag", false);
     status.isDragging = false;
     if (!event.active) simulation.alphaTarget(0);
     d.fx = null;
@@ -394,7 +397,7 @@ function draw(data) {
       d3.selectAll(".links").data(data).exit();
       d3.selectAll(".links").remove();
       d3.selectAll('.node:not([title="' + clickedNode.attr("title") + '"])').remove();
-      
+
       clickedNode
         .on("mouseenter", null)
         .on("mouseleave", null)
@@ -426,6 +429,15 @@ const drawDetail = (data, cause) => {
   d3.select(".tooltip").remove();
   svg.attr("id", "detail-chart");
 
+  let detailStatus = {
+    isNodeHover: false,
+    isTooltipHover: false,
+    isTooltip: false,
+    isDragging: false,
+    currentNode: null,
+    currentTooltip: null,
+  }
+
 
   let networkSet = getAccidentNetworkData(data, cause);
   let network = networkSet.network;
@@ -433,46 +445,65 @@ const drawDetail = (data, cause) => {
   const links = network.links.map(d => Object.create(d));
   const nodes = network.nodes.map(d => Object.create(d));
   const radius = 20;
-  const accidentNum = networkSet.accidentNum;
-  const causeNum = networkSet.causeNum;
   const forceCenter = { x: width / 2, y: height / 4 };
-  const layout = getLayout();
-  
-  function getLayout(){
-    if(causeNum >= 30 || accidentNum >= 30) {
-      return "horizontal"
-    } else {return "radial"}
-  }
+
 
   console.log(networkSet)
 
+  // determine layout (force simulation)
 
-  const simulation = d3.forceSimulation()
-    .force("link", d3.forceLink().id(d => d.id).strength(0))
-    .force("charge", d3.forceManyBody().strength(-500))
-    //.force("center", d3.forceCenter(0, 0))
-    .force("collide", d3.forceCollide().strength(1).radius(function (d) { return (d.id === "dummy") ? 1 : 20 }))
-    .force("r", d3.forceRadial(function (d) {
-      let val;
-      if (d.id === cause) {val = 0; } 
-      else { val = (d.category === "accident") ? 100 : 300  }
-      return val;
-    }, 0, -100).strength(function(){
-      if(layout === "horizontal"){return 0}
-      else {return 2}
-    }))
-    .force("x", d3.forceX())
-    .force("y", d3.forceY(function (d) {
-      if(layout === "horizontal") { return (d.category === "accident") ? -100 : 100;} 
-      else {return (d.category === "accident") ? 500 : 300;}
-    }).strength(2))
+  const layout = getLayout(networkSet.causeNum, networkSet.accidentNum);
+  function getLayout(causeNum, accidentNum) {
+    if (causeNum >= 30 || accidentNum >= 30) {
+      return "horizontal"
+    } else { return "radial" }
+  }
+
+  let simulation;
+  if (layout === "horizontal") {
+
+    simulation = d3.forceSimulation()
+      .force("link", d3.forceLink().id(d => d.id).strength(0))
+      .force("charge", d3.forceManyBody().strength(-500))
+      .force("center", d3.forceCenter(0, 0))
+      .force("collide", d3.forceCollide().strength(1).radius(function (d) { return (d.id === "dummy") ? 1 : 20 }))
+      .force("r", d3.forceRadial(function (d) {
+        let val;
+        if (layout === "horizontal") { val = 0; }
+        else { val = (d.category === "accident") ? 100 : 300 }
+        return val;
+      }, 0, -100).strength(0))
+      .force("x", d3.forceX())
+      .force("y", d3.forceY(function (d) { return (d.category === "accident") ? -100 : 100; }).strength(2))
+
+  } else {
+    simulation = d3.forceSimulation()
+      .force("link", d3.forceLink().id(d => d.id).strength(0))
+      .force("charge", d3.forceManyBody().strength(-500))
+      .force("center", d3.forceCenter(0, 0))
+      .force("collide", d3.forceCollide().strength(1).radius(function (d) { return (d.id === "dummy") ? 1 : 20 }))
+      .force("r", d3.forceRadial(function (d) {
+        let val;
+        if (d.id === cause) {
+          val = 0;
+        } else {
+          val = (d.category === "accident") ? 100 : 300
+        }
+        return val;
+      }, 0, -100).strength(2))
+      .force("x", d3.forceX())
+      .force("y", d3.forceY(function (d) {
+        return (d.category === "accident") ? 500 : 300;
+      }));
+  }
+
 
   // detail with center
   let centerNode = d3.select('[title = "' + cause + '"]').attr("class", d3.select('[title = "' + cause + '"]').attr("class") + " center-node")
-  .call(d3.drag()
-  .on("start", dragstarted)
-  .on("drag", dragged)
-  .on("end", dragended));;
+    .call(d3.drag()
+      .on("start", dragstarted)
+      .on("drag", dragged)
+      .on("end", dragended));;
 
   let link = svg.insert("g", "g.nodes")
     .attr("class", "links")
@@ -497,16 +528,13 @@ const drawDetail = (data, cause) => {
 
 
 
-
-
-
   let circles = node.append("circle")
     .attr("r", function (d) {
       return (d.id === "dummy") ? 1 : radius;
     })
-
     .on("mouseenter", mouseenter)
     .on("mouseleave", mouseleave)
+    .attr("drag", false)
     .call(d3.drag()
       .on("start", dragstarted)
       .on("drag", dragged)
@@ -517,23 +545,21 @@ const drawDetail = (data, cause) => {
   let labels = node.append("text")
     .attr("text-anchor", "middle")
     .attr("class", "label")
-    .attr('y', function(d){
-      if(layout === "horizontal") {return (d.category === "accident") ?  -radius - 60 : radius +10 ;  }
-      else {return 0}
+    .attr('y', function (d) {
+      if (layout === "horizontal") { return (d.category === "accident") ? -radius - 60 : radius + 10; }
+      else { return 0 }
     })
     .attr('x', 0)
-    .attr("transform", function(d){
+    .attr("transform", function (d) {
       if (layout === "horizontal") {
         return "rotate(-45 0,0) translate(50,60)"
       }
     });
 
   d3.selectAll('[category="cause"] text').text(function (d) { return d.id; });
-  d3.selectAll('[category="accident"] text').style("fill", function(d){return injuryColor(d.injuryMax)})
-  d3.selectAll('[category="accident"] text').append("tspan").text(function (d) { return  d.canyon });
-  d3.selectAll('[category="accident"] text').append("tspan").text(function (d) { return  d.date }).attr("dy", "1.2em").attr("x", 0);
-
-    
+  d3.selectAll('[category="accident"] text').style("fill", function (d) { return injuryColor(d.injuryMax) })
+  d3.selectAll('[category="accident"] text').append("tspan").text(function (d) { return d.canyon });
+  d3.selectAll('[category="accident"] text').append("tspan").text(function (d) { return d.date }).attr("dy", "1.2em").attr("x", 0);
 
 
 
@@ -576,11 +602,13 @@ const drawDetail = (data, cause) => {
   };
   // drag and drop 
   function dragstarted(event, d) {
-    status.isDragging = true;
+    d3.select(this).attr("drag", true);
+    detailStatus.isDragging = true;
     if (!event.active) simulation.alphaTarget(0.3).restart();
     d.fx = event.x;
     d.fy = event.y;
-    d3.select(".tooltip").attr("highlighted", false);
+    if (detailStatus.isTooltip) { d3.select(".tooltip").attr("highlighted", false); }
+
   }
 
   function dragged(event, d) {
@@ -589,84 +617,70 @@ const drawDetail = (data, cause) => {
   }
 
   function dragended(event, d) {
-    status.isDragging = false;
+    detailStatus.isDragging = false;
+    d3.select(this).attr("drag", false);
     if (!event.active) simulation.alphaTarget(0);
     d.fx = null;
     d.fy = null;
     d3.selectAll(".node").attr("highlighted", null);
     d3.selectAll(".link").attr("highlighted", null);
-    d3.select('.tooltip').attr("highlighted", null);
-    if (status.isTooltip) {
-      d3.select(".tooltip").remove();
-    }
+    if (detailStatus.isTooltip) { d3.select(".tooltip").remove(); }
   }
 
-  // mouseover and mouseout
+
+
+  const sleepTime = 1000;
+
+  // sleep time expects milliseconds
+  function sleep(time) {
+    //if(detailStatus.isTooltipHover){return}
+    return new Promise((resolve) => setTimeout(resolve, time));
+  }
+
+  // mouseenter and mouseout
   function mouseenter(event, d) {
-    // target circle
 
-    if (!status.isDragging) {
+    if (!detailStatus.isDragging && !detailStatus.isTooltipHover) {
 
-      status.isHover = true;
+      detailStatus.currentNode = d.id;
+      console.log("Fire Enter: " + detailStatus.currentNode);
 
-      let targetCircle = d3.select(this);
-      let targetNode = d3.select(this.parentNode);
+      //d3.selectAll(".tooltip").remove();
 
-      // highlight nodes
-      d3.selectAll(".node").attr("highlighted", false);
-      targetNode.attr("highlighted", true);
-      d3.select(".center-node").attr("highlighted", true);
+      detailStatus.isHover = true;
 
+      highlight(network.nodes[d.index], data);
 
-      if (targetNode.attr("category") === "accident") {
-        // highlight cause
-        let index = getJsonArrayIndex(data, "id", d.id); // find accident data from dataset
-        for (i = 0; i < data[index].detailCause.split(",").length; i++) {
-          d3.select('[name="' + data[index].detailCause.split(",")[i] + '"]').attr("highlighted", true);
-        }
-      } else {
-        for (i = 0; i < d.accidents.length; i++) {
-          d3.select('[name="' + d.accidents[i] + '"]').attr("highlighted", true);
-        }
-      }
+      if (d.category === "accident") {
 
-      // highlight links
-      d3.selectAll(".link").attr("highlighted", false);
-      d3.selectAll('[source="' + d.id + '"]').attr("highlighted", true);
-      d3.selectAll('[target="' + d.id + '"]').attr("highlighted", true);
-
-      if (targetNode.attr("category") === "accident") {
-        drawAccidentTooltip(network.nodes[d.index], data);
+        drawAccidentTooltip(network.nodes[d.index]);       
 
       }
-
 
     }
 
 
   }
   function mouseleave(event, d) {
-    if (!status.isDragging) {
-      status.isHover = false;
+
+    if (!detailStatus.isDragging && !detailStatus.isTooltipHover) {
+
+      detailStatus.currentNode = null;
+
       d3.selectAll(".node").attr("highlighted", null);
       d3.selectAll(".link").attr("highlighted", null);
 
+      d3.select('.tooltip[name="' + d.id + '"]').style("transition",'opacity '+sleepTime+'ms');
+      d3.select('.tooltip[name="' + d.id + '"]').style("opacity","0")
 
-      // bug will remove after a time while stay
-
-      // sleep time expects milliseconds
-      function sleep(time) {
-        if (status.isHover){return}
-        return new Promise((resolve) => setTimeout(resolve, time));
-      }
       // Usage!
-      sleep(500).then(() => {
+      sleep(sleepTime).then(() => {
         // Do something after the sleep!
-        
-        if (!status.isTooltipHover && d3.select('.tooltip').attr("name") === d.id) {
 
-          d3.select('.tooltip').remove();
-          status.isTooltip = false;
+        if (!detailStatus.isTooltipHover && detailStatus.currentNode !== d.id && detailStatus.currentNode === null) {
+          
+          d3.select('.tooltip[name="' + d.id + '"]').remove();
+          detailStatus.isTooltip = false;
 
         }
 
@@ -677,6 +691,199 @@ const drawDetail = (data, cause) => {
 
   }
 
+
+
+
+  const drawAccidentTooltip = (nodeData) => {
+
+    const isDraw = () => {
+      if (
+        status.screen === "detail"
+        && nodeData.category === "accident"
+        && detailStatus.isNodeHover
+        && !detailStatus.isTooltipHover
+        && !detailStatus.isTooltip
+        && currentNode !== currentTooltip
+      ) { return true }
+      else { return false };
+    }
+
+    if (isDraw) {
+
+      d3.selectAll('.tooltip').remove();      
+
+      console.log("Start draw tooltip");
+
+      detailStatus.isTooltip = true;
+      detailStatus.currentTooltip = nodeData.id;
+
+      let tooltip = d3.select("body").append("div")
+        .attr("class", "tooltip accident-tooltip")
+        .attr("injury-max", nodeData.injuryMax)
+        .attr("name", nodeData.id);
+
+      let tooltipTitle = tooltip.append("div").attr("class", "tooltip-title");
+      tooltipTitle.append("h4").html(nodeData.canyon + ' (' + nodeData.date + ')');
+      //tooltipTitle.append("span").attr("class", "date").html(nodeData.date);
+
+      let tooltipList = tooltip.append("div").attr("class", "tooltip-list");
+      // canyon
+      tooltipList.append("div").attr("class", "canyon");
+      d3.select(".canyon").append("div").html("Canyon");
+      let locationString = d3.select(".canyon").append("div");
+      if (nodeData.canyonUrl.includes("http")) {
+        locationString.html('<a href="' + nodeData.canyonUrl + '" target="_blank">' + nodeData.canyon + '</a>')
+      } else {
+        locationString.html(nodeData.canyon);
+      }
+      // region
+      tooltipList.append("div").attr("class", "region");
+      d3.select(".region").append("div").html("Region");
+      d3.select(".region").append("div").html(nodeData.area + ', ' + nodeData.country);
+      // canyon rating
+      tooltipList.append("div").attr("class", "rating");
+      d3.select(".rating").append("div").html("Canyon Rating");
+      d3.select(".rating").append("div").html((filter.canyonRating === "FR") ? nodeData.canyonRatingFR : nodeData.canyonRatingACA);
+      // cause
+      tooltipList.append("div").attr("class", "cause");
+      d3.select(".tooltip .cause").append("div").html("Causes");
+      d3.select(".tooltip .cause").append("div").html(nodeData.detailCause.split(",").join(", "));
+
+      // accident analysis    
+
+      // load analysis data for the first place
+      if (analysisData === undefined || analysisData === null) {
+        d3.csv(analysisDataUrl).then(function (data) {
+          analysisData = data.filter(function (d) { return d.id !== "" });
+        });
+      }
+
+      try {
+        let filteredAnalysisData = analysisData.filter(function (d) {
+          return d.id === nodeData.id;
+        });
+
+        let analysisContent = "";
+        if (filteredAnalysisData.length === 1) {
+          analysisContent = filteredAnalysisData[0].analysis;
+        } else if (!getJsonArrayIndex(filteredAnalysisData, "type", "Main") === -1) {
+          analysisContent = filteredAnalysisData[getJsonArrayIndex(filteredAnalysisData, "analysisType", "Main")].analysis;
+        } else if (!getJsonArrayIndex(filteredAnalysisData, "type", "Rescue") === -1) {
+          analysisContent = filteredAnalysisData[getJsonArrayIndex(filteredAnalysisData, "analysisType", "Rescue")].analysis;
+        } else { //ICAD analysis
+          analysisContent = filteredAnalysisData[getJsonArrayIndex(filteredAnalysisData, "analysisType", "ICAD")].analysis;
+        }
+
+        if (analysisContent !== "") {
+          tooltip.append("hr");
+          tooltip.append("span").attr("class", "analysis-title").html("Analysis");
+          tooltip.append("div").attr("class", "tooltip-analysis").html(analysisContent);
+        }
+
+      } catch {
+        console.log("no accident analysis");
+      }
+
+      // view more button
+      tooltip.append("div").attr("class", "view-more").append("a").attr("href", nodeData.accidentUrl).attr("target", "_blank").html("View More");
+
+
+
+      /* determine tooltip position start */
+      let nodeCoords = getCoords('[name="' + nodeData.id + '"] circle');
+      let svgCoords = getCoords("#detail-chart");
+      let tooltipCoords = getCoords(".tooltip");
+
+      // left = x, top = y
+      // find center coordinates
+      let centerCoords = {
+        cx: (nodeCoords.right - nodeCoords.left) / 2 + nodeCoords.left,
+        cy: (nodeCoords.bottom - nodeCoords.top) / 2 + nodeCoords.top,
+      }
+
+      // determine x
+      let tooltipX;
+      if (centerCoords.cx > svgCoords.x + svgCoords.width / 2) { // at right      
+        tooltipX = nodeCoords.x - tooltipCoords.width - 20;
+      } else { // at left      
+        tooltipX = nodeCoords.right + 20;
+      }
+      // determin y
+      tooltipY = centerCoords.cy - tooltipCoords.height / 2;
+      if (tooltipY < svgCoords.y) { // if the top of tooltip is above svg top
+        tooltipY = svgCoords.y + 20;
+      } else if (tooltipY + tooltipCoords.height > svgCoords.y + svgCoords.height) { // if the bottom of the tooltip is more than svg bottom
+        tooltipY = svgCoords.y + svgCoords.height - tooltipCoords.height - 20;
+      }
+
+      // set up inline postion
+      tooltip
+        .style("left", tooltipX + "px")
+        .style("top", tooltipY + "px");
+
+      /* determine tooltip position end */
+
+
+      // tooltip event
+      tooltip
+        .on("mouseenter", function () {
+
+          detailStatus.isTooltipHover = true;
+          detailStatus.isNodeHover = false;
+
+          d3.selectAll('.tooltip:not([name="' + nodeData.id + '"])').remove();
+
+
+          //d3.selectAll('.tooltip[name]:not[name="'+nodeData.id+'"]').remove();
+          
+          d3.select(this).attr("highlighted", true);
+          d3.select(this).style("opacity",null);
+        })
+        .on("mouseleave", function () {
+          detailStatus.isTooltipHover = false;
+          d3.select(this).remove();
+          detailStatus.isTooltip = false;
+        })
+
+
+
+
+    }
+
+  }
+
+
+}
+
+
+const highlight = (nodeData, data) => {
+
+  const targetNode = d3.select('.node[name="' + nodeData.id + '"]');
+
+
+  // highlight nodes
+  d3.selectAll(".node").attr("highlighted", false);
+  targetNode.attr("highlighted", true);
+  d3.select(".center-node").attr("highlighted", true);
+
+
+  if (nodeData.category === "accident") {
+    // of is accident node, highlight cause
+    let index = getJsonArrayIndex(data, "id", nodeData.id); // find accident data from dataset
+    for (i = 0; i < data[index].detailCause.split(",").length; i++) {
+      d3.select('[name="' + data[index].detailCause.split(",")[i] + '"]').attr("highlighted", true);
+    }
+  } else {
+    // if is cause node, highlight accident
+    for (i = 0; i < nodeData.accidents.length; i++) {
+      d3.select('[name="' + nodeData.accidents[i] + '"]').attr("highlighted", true);
+    }
+  }
+
+  // highlight links
+  d3.selectAll(".link").attr("highlighted", false);
+  d3.selectAll('[source="' + nodeData.id + '"]').attr("highlighted", true);
+  d3.selectAll('[target="' + nodeData.id + '"]').attr("highlighted", true);
 
 }
 
@@ -689,9 +896,9 @@ const drawFilter = (array) => {
 
 const drawTooltip = (nodeData, data, cause) => {
 
-  if (status.isHover && status.screen === "cause" ) {
+  if (status.isHover && status.screen === "cause") {
 
-    status.isTooltip = true;    
+    status.isTooltip = true;
 
     let tooltip = d3.select("body").append("div")
       .attr("class", "tooltip main-cause-tooltip")
@@ -825,137 +1032,7 @@ const drawTooltip = (nodeData, data, cause) => {
 }
 
 
-const drawAccidentTooltip = (nodeData, data) => {
 
-  if (status.isHover && status.screen === "detail" && nodeData.category === "accident" && !status.isTooltip) {
-
-    status.isTooltip = true;
-
-    let tooltip = d3.select("body").append("div")
-      .attr("class", "tooltip accident-tooltip")
-      .attr("injury-max", nodeData.injuryMax)
-      .attr("name", nodeData.id);
-
-    let tooltipTitle = tooltip.append("div").attr("class", "tooltip-title");
-    tooltipTitle.append("h4").html(nodeData.canyon + ' (' + nodeData.date + ')');
-    //tooltipTitle.append("span").attr("class", "date").html(nodeData.date);
-
-    let tooltipList = tooltip.append("div").attr("class", "tooltip-list");
-    // canyon
-    tooltipList.append("div").attr("class", "canyon");
-    d3.select(".canyon").append("div").html("Canyon");
-    let locationString = d3.select(".canyon").append("div");
-    if (nodeData.canyonUrl.includes("http")) {
-      locationString.html('<a href="' + nodeData.canyonUrl + '" target="_blank">' + nodeData.canyon + '</a>')
-    } else {
-      locationString.html(nodeData.canyon);
-    }
-    // region
-    tooltipList.append("div").attr("class", "region");
-    d3.select(".region").append("div").html("Region");
-    d3.select(".region").append("div").html(nodeData.area + ', ' + nodeData.country);
-    // canyon rating
-    tooltipList.append("div").attr("class", "rating");
-    d3.select(".rating").append("div").html("Canyon Rating");
-    d3.select(".rating").append("div").html((filter.canyonRating === "FR") ? nodeData.canyonRatingFR : nodeData.canyonRatingACA);
-    // cause
-    tooltipList.append("div").attr("class", "cause");
-    d3.select(".tooltip .cause").append("div").html("Causes");
-    d3.select(".tooltip .cause").append("div").html(nodeData.detailCause.split(",").join(", "));
-
-    // accident analysis    
-
-    // load analysis data for the first place
-    if (analysisData === undefined || analysisData === null) {
-      d3.csv(analysisDataUrl).then(function (data) {
-        analysisData = data.filter(function (d) { return d.id !== "" });
-      });
-    }
-
-    try {
-      let filteredAnalysisData = analysisData.filter(function (d) {
-        return d.id === nodeData.id;
-      });
-
-      let analysisContent = "";
-      if (filteredAnalysisData.length === 1) {
-        analysisContent = filteredAnalysisData[0].analysis;
-      } else if (!getJsonArrayIndex(filteredAnalysisData, "type", "Main") === -1) {
-        analysisContent = filteredAnalysisData[getJsonArrayIndex(filteredAnalysisData, "analysisType", "Main")].analysis;
-      } else if (!getJsonArrayIndex(filteredAnalysisData, "type", "Rescue") === -1) {
-        analysisContent = filteredAnalysisData[getJsonArrayIndex(filteredAnalysisData, "analysisType", "Rescue")].analysis;
-      } else { //ICAD analysis
-        analysisContent = filteredAnalysisData[getJsonArrayIndex(filteredAnalysisData, "analysisType", "ICAD")].analysis;
-      }
-
-      if (analysisContent !== "") {
-        tooltip.append("hr");
-        tooltip.append("span").attr("class", "analysis-title").html("Analysis");
-        tooltip.append("div").attr("class", "tooltip-analysis").html(analysisContent);
-      }
-
-    } catch {
-      console.log("no accident analysis");
-    }
-
-    // view more button
-    tooltip.append("div").attr("class", "view-more").append("a").attr("href", nodeData.accidentUrl).attr("target", "_blank").html("View More");
-
-
-
-    /* determine tooltip position start */
-    let nodeCoords = getCoords('[name="' + nodeData.id + '"] circle');
-    let svgCoords = getCoords("#detail-chart");
-    let tooltipCoords = getCoords(".tooltip");
-
-    // left = x, top = y
-    // find center coordinates
-    let centerCoords = {
-      cx: (nodeCoords.right - nodeCoords.left) / 2 + nodeCoords.left,
-      cy: (nodeCoords.bottom - nodeCoords.top) / 2 + nodeCoords.top,
-    }
-
-    // determine x
-    let tooltipX;
-    if (centerCoords.cx > svgCoords.x + svgCoords.width / 2) { // at right      
-      tooltipX = nodeCoords.x - tooltipCoords.width - 20;
-    } else { // at left      
-      tooltipX = nodeCoords.right + 20;
-    }
-    // determin y
-    tooltipY = centerCoords.cy - tooltipCoords.height / 2;
-    if (tooltipY < svgCoords.y) { // if the top of tooltip is above svg top
-      tooltipY = svgCoords.y + 20;
-    } else if (tooltipY + tooltipCoords.height > svgCoords.y + svgCoords.height) { // if the bottom of the tooltip is more than svg bottom
-      tooltipY = svgCoords.y + svgCoords.height - tooltipCoords.height - 20;
-    }
-
-    // set up inline postion
-    tooltip
-      .style("left", tooltipX + "px")
-      .style("top", tooltipY + "px");
-
-    /* determine tooltip position end */
-
-
-    // tooltip event
-    tooltip
-      .on("mouseenter", function () {
-        status.isTooltipHover = true;
-        d3.select(this).attr("highlighted",true);
-      })
-      .on("mouseleave", function () {
-        status.isTooltipHover = false;
-        d3.select(this).remove();
-        status.isTooltip = false;
-      })
-
-
-
-
-  }
-
-}
 
 
 const find_in_object = (my_array, my_criteria) => {

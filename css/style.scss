@@ -72,10 +72,25 @@ svg {
 }
 
 
+#main-chart .node{
+    cursor: pointer;
+    &[drag = true]{
+        cursor:grabbing;
+    }
+}
+
+#detail-chart .node {
+    cursor: grab;
+    circle[drag=true]{
+        cursor: grabbing;
+    }
+
+}
+
 
 
 .node {
-    //cursor: pointer;
+    
     @mixin default() {
         stroke: #fff;
         stroke-width: 1.5px;        
