@@ -5,9 +5,11 @@
 
 // variables
 const dataUrl = "data/accident.csv";
+const analysisDataUrl = "data/accident-analysis.csv";
 const width = window.innerWidth;
 const height = window.innerHeight;
 const svg = d3.select("svg");
+const svgPosition = getCoords("svg");
 let ctx = {
 
   GRPAH: null,//cause,detail
@@ -19,6 +21,7 @@ let status = {
   isDragging: false,
   isHover: false,
   isTooltip: false,
+  isTooltipHover: false,
 }
 
 let filter = {
@@ -26,6 +29,7 @@ let filter = {
 }
 let injuryList = [];
 let nodeNeighbor = [];
+let analysisData;
 
 const causeType = {
   "Inadequate equipment": "Human error",
@@ -76,6 +80,18 @@ const injuryRating = {
   "Others": 0,
 }
 
+const injuryColor = function (injury) {
+  let rating = injuryRating[injury];
+  if (rating === 0) {
+    return "#cccccc";
+  } else {
+    //const colorScheme = d3.scaleOrdinal(d3.schemeReds[Object.keys[injuryRating]-1]);
+    let length = Object.keys(injuryRating).length - 1;
+    //var blues = d3.scaleOrdinal(d3.schemeBlues[9]);
+    //let sequential = d3.scaleSequential("red").interpolator(d3.interpolateSpectral).domain([1, Object.keys[injuryRating]-1]); 
+    return d3.interpolateReds(rating / length);;
+  }
+}
 
 //var color = d3.scaleOrdinal(d3.schemeCategory20);
 
@@ -157,31 +173,31 @@ function draw(data) {
     .force("x", d3.forceX().x(d => d.x))
     .force("y", d3.forceY(height / 2));
 
-    /*
-    .force("bounding-box", () => {
+  /*
+  .force("bounding-box", () => {
 
-      nodes.forEach(node => {
-        if (isOutside(node).boolean) {
-          let offset = 4;
-          if (isOutside(node).position.horizontal === "left") {
-            node.x = node.x + offset;
-          } else if (isOutside(node).position.horizontal === "right") {
-            node.x = node.x - offset;
-          } else {
-            node.x = node.x;
-          }
-          if (isOutside(node).position.vertical === "top") {
-            node.y = node.y + offset;
-          } else if (isOutside(node).position.vertical === "bottom") {
-            node.y = node.y - offset;
-          } else {
-            node.y = node.y;
-          }
+    nodes.forEach(node => {
+      if (isOutside(node).boolean) {
+        let offset = 4;
+        if (isOutside(node).position.horizontal === "left") {
+          node.x = node.x + offset;
+        } else if (isOutside(node).position.horizontal === "right") {
+          node.x = node.x - offset;
+        } else {
+          node.x = node.x;
         }
-      })
+        if (isOutside(node).position.vertical === "top") {
+          node.y = node.y + offset;
+        } else if (isOutside(node).position.vertical === "bottom") {
+          node.y = node.y - offset;
+        } else {
+          node.y = node.y;
+        }
+      }
+    })
 
 
-    });
+  });
 */
   //.force("box_force",box_force());
   /*
@@ -378,7 +394,7 @@ function draw(data) {
       d3.selectAll(".links").data(data).exit();
       d3.selectAll(".links").remove();
       d3.selectAll('.node:not([title="' + clickedNode.attr("title") + '"])').remove();
-
+      
       clickedNode
         .on("mouseenter", null)
         .on("mouseleave", null)
@@ -388,7 +404,7 @@ function draw(data) {
           .on("end", null));
 
 
-      simulation.stop();
+      //simulation.stop();
 
       drawDetail(data.filter(function (d) { return d.cause.includes(clickedNode.attr("title")) }), clickedNode.attr("title")); // (data, cause)
       //drawChord(data.filter(function (d) { return d.cause.includes(clickedNode.attr("title")) }));
@@ -402,191 +418,61 @@ function draw(data) {
 
 }
 
-// https://www.visualcinnamon.com/2015/08/stretched-chord/
-// http://bl.ocks.org/nbremer/c11409af47b5950f0289
-function drawChord(data) {
-  ////////////////////////////////////////////////////////////
-  //////////////////////// Set-up ////////////////////////////
-  ////////////////////////////////////////////////////////////
-  //var screenWidth = $(window).width();
-  let screenWidth = window.innerWidth;
-  let mobileScreen = (screenWidth > 400 ? false : true);
 
-  //var margin = {left: 50, top: 10, right: 50, bottom: 10},
-  let margin = { left: 00, top: 0, right: 00, bottom: 0 },
-    width = Math.min(screenWidth, 800) - margin.left - margin.right,
-    height = (mobileScreen ? 300 : Math.min(screenWidth, 800) * 5 / 6) - margin.top - margin.bottom;
-
-  //var svg = d3.select("#main-chart").append("svg")
-  //.attr("width", (width + margin.left + margin.right))
-  //.attr("height", (height + margin.top + margin.bottom));
-
-  let wrapper = svg;
-  //var wrapper = svg.append("g").attr("class", "chordWrapper")
-  //.attr("transform", "translate(" + (width / 2 + margin.left) + "," + (height / 2 + margin.top) + ")");;
-
-  var outerRadius = Math.min(width, height) / 2 - (mobileScreen ? 80 : 100),
-    innerRadius = outerRadius * 0.95,
-    pullOutSize = (mobileScreen ? 20 : 50),
-    opacityDefault = 0.7, //default opacity of chords
-    opacityLow = 0.02; //hover opacity of those chords not hovered over
-
-  ////////////////////////////////////////////////////////////
-  ////////////////////////// Data ////////////////////////////
-  ////////////////////////////////////////////////////////////
-
-  let chordData = getChordData(data);
-
-  //Custom sort function of the chords to keep them in the original order
-  function customSort(a, b) {
-    return 1;
-  };
-
-  //Custom sort function of the chords to keep them in the original order
-  var chord = customChordLayout(chordData.matrix) //d3.layout.chord()//Custom sort function of the chords to keep them in the original order
-    .padding(.02)
-    .sortChords(d3.descending) //which chord should be shown on top when chords cross. Now the biggest chord is at the bottom
-    .matrix(chordData.matrix);
-
-  var arc = d3.arc()
-    .innerRadius(innerRadius)
-    .outerRadius(outerRadius)
-    .startAngle(startAngle) //startAngle and endAngle now include the offset in degrees
-    .endAngle(endAngle);
-
-  var path = stretchedChord()
-    .radius(innerRadius)
-    .startAngle(startAngle)
-    .endAngle(endAngle)
-    .pullOutSize(pullOutSize);
-
-  ////////////////////////////////////////////////////////////
-  //////////////////// Draw outer Arcs ///////////////////////
-  ////////////////////////////////////////////////////////////
-
-  var g = wrapper.selectAll("g.group")
-    .data(chord.groups)
-    .enter().append("g")
-    .attr("class", "group")
-    .on("mouseover", fade(opacityLow))
-    .on("mouseout", fade(opacityDefault));
-
-  g.append("path")
-    .style("stroke", function (d, i) { return (chordData.names[i] === "" ? "none" : "#00A1DE"); })
-    .style("fill", function (d, i) { return (chordData.names[i] === "" ? "none" : "#00A1DE"); })
-    .style("pointer-events", function (d, i) { return (chordData.names[i] === "" ? "none" : "auto"); })
-    .attr("d", arc)
-    .attr("transform", function (d, i) { //Pull the two slices apart
-      d.pullOutSize = pullOutSize * (d.startAngle + 0.001 > Math.PI ? -1 : 1);
-      return "translate(" + d.pullOutSize + ',' + 0 + ")";
-    });
-
-
-  ////////////////////////////////////////////////////////////
-  ////////////////////// Append Names ////////////////////////
-  ////////////////////////////////////////////////////////////
-
-  //The text also needs to be displaced in the horizontal directions
-  //And also rotated with the offset in the clockwise direction
-  g.append("text")
-    .each(function (d) { d.angle = ((d.startAngle + d.endAngle) / 2) + chordData.offset; })
-    .attr("dy", ".35em")
-    .attr("class", "titles")
-    .attr("text-anchor", function (d) { return d.angle > Math.PI ? "end" : null; })
-    .attr("transform", function (d, i) {
-      var c = arc.centroid(d);
-      return "translate(" + (c[0] + d.pullOutSize) + "," + c[1] + ")"
-        + "rotate(" + (d.angle * 180 / Math.PI - 90) + ")"
-        + "translate(" + 55 + ",0)"
-        + (d.angle > Math.PI ? "rotate(180)" : "")
-    })
-    .text(function (d, i) { return chordData.names[i]; });
-
-  ////////////////////////////////////////////////////////////
-  //////////////////// Draw inner chords /////////////////////
-  ////////////////////////////////////////////////////////////
-
-  var chords = wrapper.selectAll("path.chord")
-    .data(chord.chords)
-    .enter().append("path")
-    .attr("class", "chord")
-    .style("stroke", "none")
-    .style("fill", "#C4C4C4")
-    .style("opacity", function (d) { return (chordData.names[d.source.index] === "" ? 0 : opacityDefault); }) //Make the dummy strokes have a zero opacity (invisible)
-    .style("pointer-events", function (d, i) { return (chordData.names[d.source.index] === "" ? "none" : "auto"); }) //Remove pointer events from dummy strokes
-    .attr("d", path);
-
-  ////////////////////////////////////////////////////////////
-  ///////////////////////// Tooltip //////////////////////////
-  ////////////////////////////////////////////////////////////
-
-  //Arcs
-  g.append("title")
-    .text(function (d, i) { return Math.round(d.value) + " people in " + chordData.names[i]; });
-
-  //Chords
-  chords.append("title")
-    .text(function (d) {
-      return [Math.round(d.source.value), " people from ", chordData.names[d.target.index], " to ", chordData.names[d.source.index]].join("");
-    });
-
-  ////////////////////////////////////////////////////////////
-  ////////////////// Extra Functions /////////////////////////
-  ////////////////////////////////////////////////////////////
-
-  //Include the offset in de start and end angle to rotate the Chord diagram clockwise
-  function startAngle(d) { return d.startAngle + chordData.offset; }
-  function endAngle(d) { return d.endAngle + chordData.offset; }
-
-  // Returns an event handler for fading a given chord group
-  function fade(opacity) {
-    return function (d, i) {
-      svg.selectAll("path.chord")
-        .filter(function (d) { return d.source.index !== i && d.target.index !== i && chordData.names[d.source.index] !== ""; })
-        .transition("fadeOnArc")
-        .style("opacity", opacity);
-    };
-  }//fade
-}
-
-
-function drawDetail(data, cause) {
+const drawDetail = (data, cause) => {
 
   status.isHover = false;
   status.isTooltip = false;
   d3.select(".tooltip").remove();
-
-
-
   svg.attr("id", "detail-chart");
-  d3.select('[title = "' + cause + '"]').attr("class", d3.select('[title = "' + cause + '"]').attr("class") + " center-node");
 
-  let network = getAccidentNetworkData(data, cause);
 
+  let networkSet = getAccidentNetworkData(data, cause);
+  let network = networkSet.network;
 
   const links = network.links.map(d => Object.create(d));
   const nodes = network.nodes.map(d => Object.create(d));
+  const radius = 20;
+  const accidentNum = networkSet.accidentNum;
+  const causeNum = networkSet.causeNum;
+  const forceCenter = { x: width / 2, y: height / 4 };
+  const layout = getLayout();
+  
+  function getLayout(){
+    if(causeNum >= 30 || accidentNum >= 30) {
+      return "horizontal"
+    } else {return "radial"}
+  }
+
+  console.log(networkSet)
 
 
   const simulation = d3.forceSimulation()
     .force("link", d3.forceLink().id(d => d.id).strength(0))
     .force("charge", d3.forceManyBody().strength(-500))
-    .force("center", d3.forceCenter(0, 0))
+    //.force("center", d3.forceCenter(0, 0))
     .force("collide", d3.forceCollide().strength(1).radius(function (d) { return (d.id === "dummy") ? 1 : 20 }))
     .force("r", d3.forceRadial(function (d) {
       let val;
-      if (d.id === cause) {
-        val = 0;
-      } else {
-        val = (d.category === "accident") ? 100 : 300
-      }
+      if (d.id === cause) {val = 0; } 
+      else { val = (d.category === "accident") ? 100 : 300  }
       return val;
-    }, 0, -100).strength(2))
+    }, 0, -100).strength(function(){
+      if(layout === "horizontal"){return 0}
+      else {return 2}
+    }))
     .force("x", d3.forceX())
     .force("y", d3.forceY(function (d) {
-      return (d.category === "accident") ? 500 : 300;
-    }));
+      if(layout === "horizontal") { return (d.category === "accident") ? -100 : 100;} 
+      else {return (d.category === "accident") ? 500 : 300;}
+    }).strength(2))
 
+  // detail with center
+  let centerNode = d3.select('[title = "' + cause + '"]').attr("class", d3.select('[title = "' + cause + '"]').attr("class") + " center-node")
+  .call(d3.drag()
+  .on("start", dragstarted)
+  .on("drag", dragged)
+  .on("end", dragended));;
 
   let link = svg.insert("g", "g.nodes")
     .attr("class", "links")
@@ -606,15 +492,19 @@ function drawDetail(data, cause) {
     .attr("name", function (d) { return d.id })
     .attr("class", function (d) { return (d.id === "dummy") ? "node dummy" : "node"; });
 
-  d3.selectAll('[category="accident"]').attr("injury-max",function(d){return d.injuryMax});
-  d3.selectAll('[category="cause"]').attr("type",function(d){return getCauseType(d.id)});
+  d3.selectAll('[category="accident"]').attr("injury-max", function (d) { return d.injuryMax });
+  d3.selectAll('[category="cause"]').attr("type", function (d) { return getCauseType(d.id) });
 
-  
+
+
+
+
 
   let circles = node.append("circle")
     .attr("r", function (d) {
-      return (d.id === "dummy") ? 1 : 20;
+      return (d.id === "dummy") ? 1 : radius;
     })
+
     .on("mouseenter", mouseenter)
     .on("mouseleave", mouseleave)
     .call(d3.drag()
@@ -622,12 +512,29 @@ function drawDetail(data, cause) {
       .on("drag", dragged)
       .on("end", dragended));
 
+  d3.selectAll('[category="accident"] circle').style("fill", function (d) { return injuryColor(d.injuryMax) });
+
   let labels = node.append("text")
-    .text(function (d) { return (d.category === "accident") ? d.canyon + " (" + d.date + ")" : d.id; })
     .attr("text-anchor", "middle")
     .attr("class", "label")
+    .attr('y', function(d){
+      if(layout === "horizontal") {return (d.category === "accident") ?  -radius - 60 : radius +10 ;  }
+      else {return 0}
+    })
     .attr('x', 0)
-    .attr('y', 0);
+    .attr("transform", function(d){
+      if (layout === "horizontal") {
+        return "rotate(-45 0,0) translate(50,60)"
+      }
+    });
+
+  d3.selectAll('[category="cause"] text').text(function (d) { return d.id; });
+  d3.selectAll('[category="accident"] text').style("fill", function(d){return injuryColor(d.injuryMax)})
+  d3.selectAll('[category="accident"] text').append("tspan").text(function (d) { return  d.canyon });
+  d3.selectAll('[category="accident"] text').append("tspan").text(function (d) { return  d.date }).attr("dy", "1.2em").attr("x", 0);
+
+    
+
 
 
   simulation
@@ -649,12 +556,22 @@ function drawDetail(data, cause) {
       .attr("transform", function (d) {
         return "translate(" + d.x + "," + d.y + ")";
       });
-
     /*
-     node
-       .attr("cx", function (d) { return d.x = Math.max(15, Math.min(width - 15, d.x)); })
-       .attr("cy", function (d) { return d.y = Math.max(15, Math.min(height - 15, d.y)); });
-  */
+   
+         node.attr("cx", function(d) { return d.x = Math.max(radius, Math.min(width - radius, d.x)); })
+         .attr("cy", function(d) { return d.y = Math.max(radius, Math.min(height - radius, d.y)); });
+   
+    
+         node
+         .attr("transform", function (d) {
+           
+           let dx = (d.x < 0 )? Math.min(radius*2, Math.min(width, d.x)): Math.max(radius*2, Math.min(width, d.x));
+           let dy = (d.y < 0 )? Math.min(radius*2, Math.min(height, d.y)): Math.max(radius*2, Math.min(height, d.y));
+           console.log({dx: dx, "d.x": d.x, radius: radius,svgPositionX : svgPosition.x, svgPositionWidth: svgPosition.width , width: width});
+           return "translate(" + dx + "," + dy + ")";
+         });
+    
+      */
 
   };
   // drag and drop 
@@ -720,6 +637,7 @@ function drawDetail(data, cause) {
 
       if (targetNode.attr("category") === "accident") {
         drawAccidentTooltip(network.nodes[d.index], data);
+
       }
 
 
@@ -732,8 +650,29 @@ function drawDetail(data, cause) {
       status.isHover = false;
       d3.selectAll(".node").attr("highlighted", null);
       d3.selectAll(".link").attr("highlighted", null);
-      d3.select('.tooltip').remove();
-      status.isTooltip = false;
+
+
+      // bug will remove after a time while stay
+
+      // sleep time expects milliseconds
+      function sleep(time) {
+        if (status.isHover){return}
+        return new Promise((resolve) => setTimeout(resolve, time));
+      }
+      // Usage!
+      sleep(500).then(() => {
+        // Do something after the sleep!
+        
+        if (!status.isTooltipHover && d3.select('.tooltip').attr("name") === d.id) {
+
+          d3.select('.tooltip').remove();
+          status.isTooltip = false;
+
+        }
+
+      });
+
+
     }
 
   }
@@ -741,122 +680,18 @@ function drawDetail(data, cause) {
 
 }
 
-function drawDetailxxx(data, cause) {
-
-
-  ctx.GRPAH = "detail";
-  svg.selectAll("*").remove();
-
-
-  const simulation = d3.forceSimulation()
-    .force("link", d3.forceLink().distance(30).strength(1))
-    .force("charge", d3.forceManyBody().strength(-400))
-    .force("center", d3.forceCenter())
-    .force("collide", d3.forceCollide().strength(0.08).radius(25))
-    .force("x", d3.forceX())
-    .force("y", d3.forceY());
-
-  const root = d3.hierarchy(data);
-  const links = root.links();
-  const nodes = root.descendants();
-
-  var link = svg.append("g")
-    .attr("class", "links")
-    .selectAll("line")
-    .data(links)
-    .enter().append("line")
-    .attr("class", "link")
-    .attr("stroke-width", function (d) { return Math.sqrt(d.value); });
-
-  var node = svg.append("g")
-    .attr("class", "nodes")
-    .selectAll("g")
-    .data(nodes)
-    .enter().append("g")
-
-  var circles = node.append("circle")
-    .attr("r", 10)
-    //.attr("class", function (d) { return d.group; })
-    //.attr("fill", function(d) { return color(d.group); })
-    .call(d3.drag()
-      .on("start", dragstarted)
-      .on("drag", dragged)
-      .on("end", dragended));
-
-  let lables = node.append("text")
-    .text(function (d) {
-      return d.data.name;
-    })
-    .attr("class", "detail-label")
-    .attr('x', 6)
-    .attr('y', 3);
-
-  node.append("title")
-    .text(function (d) { return d.data.name; });
-
-  node.attr("title", function (d) { return d.id; })
-    //.attr("class", d => d.children ? "node internal" : "node leaf" );
-    .attr("class", function (d) {
-      if (d.children && d.data.name === cause) {
-        return "node cause"
-      } else if (d.children) {
-        return "node accident"
-      } else {
-        return "node detail-cause"
-      }
-    });
-
-  simulation
-    .nodes(nodes)
-    .on("tick", ticked);
-
-  simulation.force("link")
-    .links(links);
-
-  function ticked() {
-    link
-      .attr("x1", function (d) { return d.source.x; })
-      .attr("y1", function (d) { return d.source.y; })
-      .attr("x2", function (d) { return d.target.x; })
-      .attr("y2", function (d) { return d.target.y; });
-
-    node
-      .attr("transform", function (d) {
-        return "translate(" + d.x + "," + d.y + ")";
-      })
-  }
-  // drag and drop
-  function dragstarted(event, d) {
-    if (!event.active) simulation.alphaTarget(0.3).restart();
-    d.fx = event.x;
-    d.fy = event.y;
-  }
-
-  function dragged(event, d) {
-    d.fx = event.x;
-    d.fy = event.y;
-  }
-
-  function dragended(event, d) {
-    if (!event.active) simulation.alphaTarget(0);
-    d.fx = null;
-    d.fy = null;
-  }
-
-}
-
-function drawFilter(array) {
+const drawFilter = (array) => {
   let select = d3.select("#injury-option");
   for (i = 0; i < array.length; i++) {
     select.append("option").attr("value", array[i]).html(array[i]);
   }
 }
 
-function drawTooltip(nodeData, data, cause) {
+const drawTooltip = (nodeData, data, cause) => {
 
-  if (status.isHover && status.screen === "cause") {
+  if (status.isHover && status.screen === "cause" ) {
 
-    status.isTooltip = true;
+    status.isTooltip = true;    
 
     let tooltip = d3.select("body").append("div")
       .attr("class", "tooltip main-cause-tooltip")
@@ -933,6 +768,7 @@ function drawTooltip(nodeData, data, cause) {
         percentSoFar = percentSoFar + thisPrecent;
         return prePrecent + "%";
       })
+      .style("fill", function (d) { return injuryColor(d.injury); });
 
     injuryBar.append("text").text(function (d) { return d.injury })
       .attr("y", 8)
@@ -989,7 +825,7 @@ function drawTooltip(nodeData, data, cause) {
 }
 
 
-function drawAccidentTooltip(nodeData, data) {
+const drawAccidentTooltip = (nodeData, data) => {
 
   if (status.isHover && status.screen === "detail" && nodeData.category === "accident" && !status.isTooltip) {
 
@@ -997,31 +833,73 @@ function drawAccidentTooltip(nodeData, data) {
 
     let tooltip = d3.select("body").append("div")
       .attr("class", "tooltip accident-tooltip")
-      .attr("name", nodeData.id)
+      .attr("injury-max", nodeData.injuryMax)
+      .attr("name", nodeData.id);
 
     let tooltipTitle = tooltip.append("div").attr("class", "tooltip-title");
-    tooltipTitle.append("h4").html(nodeData.canyon);
+    tooltipTitle.append("h4").html(nodeData.canyon + ' (' + nodeData.date + ')');
     //tooltipTitle.append("span").attr("class", "date").html(nodeData.date);
 
     let tooltipList = tooltip.append("div").attr("class", "tooltip-list");
-    // date
-    tooltipList.append("div").attr("class", "date");
-    d3.select(".date").append("div").html("Date");
-    d3.select(".date").append("div").html(nodeData.date);
-    // location
-    tooltipList.append("div").attr("class", "location");
-    d3.select(".location").append("div").html("Location");
-    let locationString = d3.select(".location").append("div");
+    // canyon
+    tooltipList.append("div").attr("class", "canyon");
+    d3.select(".canyon").append("div").html("Canyon");
+    let locationString = d3.select(".canyon").append("div");
     if (nodeData.canyonUrl.includes("http")) {
-      locationString.html('<a href="' + nodeData.canyonUrl + '" target="_blank">' + nodeData.canyon + '</a>, ' + nodeData.area + ', ' + nodeData.country);
+      locationString.html('<a href="' + nodeData.canyonUrl + '" target="_blank">' + nodeData.canyon + '</a>')
     } else {
-      locationString.html(nodeData.canyon + ', ' + nodeData.area + ', ' + nodeData.country);
+      locationString.html(nodeData.canyon);
     }
+    // region
+    tooltipList.append("div").attr("class", "region");
+    d3.select(".region").append("div").html("Region");
+    d3.select(".region").append("div").html(nodeData.area + ', ' + nodeData.country);
     // canyon rating
     tooltipList.append("div").attr("class", "rating");
     d3.select(".rating").append("div").html("Canyon Rating");
     d3.select(".rating").append("div").html((filter.canyonRating === "FR") ? nodeData.canyonRatingFR : nodeData.canyonRatingACA);
+    // cause
+    tooltipList.append("div").attr("class", "cause");
+    d3.select(".tooltip .cause").append("div").html("Causes");
+    d3.select(".tooltip .cause").append("div").html(nodeData.detailCause.split(",").join(", "));
 
+    // accident analysis    
+
+    // load analysis data for the first place
+    if (analysisData === undefined || analysisData === null) {
+      d3.csv(analysisDataUrl).then(function (data) {
+        analysisData = data.filter(function (d) { return d.id !== "" });
+      });
+    }
+
+    try {
+      let filteredAnalysisData = analysisData.filter(function (d) {
+        return d.id === nodeData.id;
+      });
+
+      let analysisContent = "";
+      if (filteredAnalysisData.length === 1) {
+        analysisContent = filteredAnalysisData[0].analysis;
+      } else if (!getJsonArrayIndex(filteredAnalysisData, "type", "Main") === -1) {
+        analysisContent = filteredAnalysisData[getJsonArrayIndex(filteredAnalysisData, "analysisType", "Main")].analysis;
+      } else if (!getJsonArrayIndex(filteredAnalysisData, "type", "Rescue") === -1) {
+        analysisContent = filteredAnalysisData[getJsonArrayIndex(filteredAnalysisData, "analysisType", "Rescue")].analysis;
+      } else { //ICAD analysis
+        analysisContent = filteredAnalysisData[getJsonArrayIndex(filteredAnalysisData, "analysisType", "ICAD")].analysis;
+      }
+
+      if (analysisContent !== "") {
+        tooltip.append("hr");
+        tooltip.append("span").attr("class", "analysis-title").html("Analysis");
+        tooltip.append("div").attr("class", "tooltip-analysis").html(analysisContent);
+      }
+
+    } catch {
+      console.log("no accident analysis");
+    }
+
+    // view more button
+    tooltip.append("div").attr("class", "view-more").append("a").attr("href", nodeData.accidentUrl).attr("target", "_blank").html("View More");
 
 
 
@@ -1059,270 +937,28 @@ function drawAccidentTooltip(nodeData, data) {
 
     /* determine tooltip position end */
 
+
+    // tooltip event
+    tooltip
+      .on("mouseenter", function () {
+        status.isTooltipHover = true;
+        d3.select(this).attr("highlighted",true);
+      })
+      .on("mouseleave", function () {
+        status.isTooltipHover = false;
+        d3.select(this).remove();
+        status.isTooltip = false;
+      })
+
+
+
+
   }
 
 }
 
-// https://www.visualcinnamon.com/2015/08/stretched-chord/
-// http://bl.ocks.org/nbremer/c11409af47b5950f0289
-function customChordLayout(matrix) {
-  var ε = 1e-6, ε2 = ε * ε, π = Math.PI, τ = 2 * π, τε = τ - ε, halfπ = π / 2, d3_radians = π / 180, d3_degrees = 180 / π;
-  var chord = {}, chords, groups, matrix, n, padding = 0, sortGroups, sortSubgroups, sortChords;
-  function relayout() {
-    var subgroups = {}, groupSums = [], groupIndex = d3.range(n), subgroupIndex = [], k, x, x0, i, j;
-    chords = [];
-    groups = [];
-    k = 0, i = -1;
-    while (++i < n) {
-      x = 0, j = -1;
-      while (++j < n) {
-        x += matrix[i][j];
-      }
-      groupSums.push(x);
-      subgroupIndex.push(d3.range(n).reverse());
-      k += x;
-    }
-    if (sortGroups) {
-      groupIndex.sort(function (a, b) {
-        return sortGroups(groupSums[a], groupSums[b]);
-      });
-    }
-    if (sortSubgroups) {
-      subgroupIndex.forEach(function (d, i) {
-        d.sort(function (a, b) {
-          return sortSubgroups(matrix[i][a], matrix[i][b]);
-        });
-      });
-    }
-    k = (τ - padding * n) / k;
-    x = 0, i = -1;
-    while (++i < n) {
-      x0 = x, j = -1;
-      while (++j < n) {
-        var di = groupIndex[i], dj = subgroupIndex[di][j], v = matrix[di][dj], a0 = x, a1 = x += v * k;
-        subgroups[di + "-" + dj] = {
-          index: di,
-          subindex: dj,
-          startAngle: a0,
-          endAngle: a1,
-          value: v
-        };
-      }
-      groups[di] = {
-        index: di,
-        startAngle: x0,
-        endAngle: x,
-        value: (x - x0) / k
-      };
-      x += padding;
-    }
-    i = -1;
-    while (++i < n) {
-      j = i - 1;
-      while (++j < n) {
-        var source = subgroups[i + "-" + j], target = subgroups[j + "-" + i];
-        if (source.value || target.value) {
-          chords.push(source.value < target.value ? {
-            source: target,
-            target: source
-          } : {
-            source: source,
-            target: target
-          });
-        }
-      }
-    }
-    if (sortChords) resort();
-  }
-  function resort() {
-    chords.sort(function (a, b) {
-      return sortChords((a.source.value + a.target.value) / 2, (b.source.value + b.target.value) / 2);
-    });
-  }
-  chord.matrix = function (x) {
-    if (!arguments.length) return matrix;
-    n = (matrix = x) && matrix.length;
-    chords = groups = null;
-    return chord;
-  };
-  chord.padding = function (x) {
-    if (!arguments.length) return padding;
-    padding = x;
-    chords = groups = null;
-    return chord;
-  };
-  chord.sortGroups = function (x) {
-    if (!arguments.length) return sortGroups;
-    sortGroups = x;
-    chords = groups = null;
-    return chord;
-  };
-  chord.sortSubgroups = function (x) {
-    if (!arguments.length) return sortSubgroups;
-    sortSubgroups = x;
-    chords = null;
-    return chord;
-  };
-  chord.sortChords = function (x) {
-    if (!arguments.length) return sortChords;
-    sortChords = x;
-    if (chords) resort();
-    return chord;
-  };
-  chord.chords = function () {
-    if (!chords) relayout();
-    return chords;
-  };
-  chord.groups = function () {
-    if (!groups) relayout();
-    return groups;
-  };
-  return chord;
-};
 
-// https://www.visualcinnamon.com/2015/08/stretched-chord/
-// http://bl.ocks.org/nbremer/c11409af47b5950f0289
-function stretchedChord() {
-
-  ////////////////////////////////////////////////////////////
-  /////////////// Custom Chord Function //////////////////////
-  //////// Pulls the chords pullOutSize pixels apart /////////
-  ////////////////// along the x axis ////////////////////////
-  ////////////////////////////////////////////////////////////
-  ///////////// Created by Nadieh Bremer /////////////////////
-  //////////////// VisualCinnamon.com ////////////////////////
-  ////////////////////////////////////////////////////////////
-  //// Adjusted from the original d3.svg.chord() function ////
-  ///////////////// from the d3.js library ///////////////////
-  //////////////// Created by Mike Bostock ///////////////////
-  ////////////////////////////////////////////////////////////
-  var source = d3_source,
-    target = d3_target,
-    radius = d3_svg_chordRadius,
-    startAngle = d3_svg_arcStartAngle,
-    endAngle = d3_svg_arcEndAngle,
-    pullOutSize = 0;
-
-  var π = Math.PI,
-    halfπ = π / 2;
-
-  function subgroup(self, f, d, i) {
-    var subgroup = f.call(self, d, i),
-      r = radius.call(self, subgroup, i),
-      a0 = startAngle.call(self, subgroup, i) - halfπ,
-      a1 = endAngle.call(self, subgroup, i) - halfπ;
-    return {
-      r: r,
-      a0: [a0],
-      a1: [a1],
-      p0: [r * Math.cos(a0), r * Math.sin(a0)],
-      p1: [r * Math.cos(a1), r * Math.sin(a1)]
-    };
-  }
-
-  function arc(r, p, a) {
-    var sign = (p[0] >= 0 ? 1 : -1);
-    return "A" + r + "," + r + " 0 " + +(a > π) + ",1 " + (p[0] + sign * pullOutSize) + "," + p[1];
-  }
-
-
-  function curve(p1) {
-    var sign = (p1[0] >= 0 ? 1 : -1);
-    return "Q 0,0 " + (p1[0] + sign * pullOutSize) + "," + p1[1];
-  }
-
-  /*
-  M = moveto
-  M x,y
-  Q = quadratic Bézier curve
-  Q control-point-x,control-point-y end-point-x, end-point-y
-  A = elliptical Arc
-  A rx, ry x-axis-rotation large-arc-flag, sweep-flag  end-point-x, end-point-y
-  Z = closepath
-
-  M251.5579641956022,87.98204731514328
-  A266.5,266.5 0 0,1 244.49937503334525,106.02973926358392
-  Q 0,0 -177.8355222451483,198.48621369706098
-  A266.5,266.5 0 0,1 -191.78901944612068,185.0384338992728
-  Q 0,0 251.5579641956022,87.98204731514328
-  Z
-  */
-  function chord(d, i) {
-    var s = subgroup(this, source, d, i),
-      t = subgroup(this, target, d, i);
-
-    return "M" + (s.p0[0] + pullOutSize) + "," + s.p0[1] +
-      arc(s.r, s.p1, s.a1 - s.a0) +
-      curve(t.p0) +
-      arc(t.r, t.p1, t.a1 - t.a0) +
-      curve(s.p0) +
-      "Z";
-  }//chord
-
-  chord.radius = function (v) {
-    if (!arguments.length) return radius;
-    radius = d3_functor(v);
-    return chord;
-  };
-  chord.pullOutSize = function (v) {
-    if (!arguments.length) return pullOutSize;
-    pullOutSize = v;
-    return chord;
-  };
-  chord.source = function (v) {
-    if (!arguments.length) return source;
-    source = d3_functor(v);
-    return chord;
-  };
-  chord.target = function (v) {
-    if (!arguments.length) return target;
-    target = d3_functor(v);
-    return chord;
-  };
-  chord.startAngle = function (v) {
-    if (!arguments.length) return startAngle;
-    startAngle = d3_functor(v);
-    return chord;
-  };
-  chord.endAngle = function (v) {
-    if (!arguments.length) return endAngle;
-    endAngle = d3_functor(v);
-    return chord;
-  };
-
-
-  function d3_svg_chordRadius(d) {
-    return d.radius;
-  }
-
-  function d3_source(d) {
-    return d.source;
-  }
-
-  function d3_target(d) {
-    return d.target;
-  }
-
-  function d3_svg_arcStartAngle(d) {
-    return d.startAngle;
-  }
-
-  function d3_svg_arcEndAngle(d) {
-    return d.endAngle;
-  }
-
-  function d3_functor(v) {
-    return typeof v === "function" ? v : function () {
-      return v;
-    };
-  }
-
-  return chord;
-
-}//stretchedChord
-
-
-function find_in_object(my_array, my_criteria) {
+const find_in_object = (my_array, my_criteria) => {
   return my_array.filter(function (obj) {
     return Object.keys(my_criteria).every(function (key) {
       return (Array.isArray(my_criteria[key]) &&
@@ -1334,7 +970,7 @@ function find_in_object(my_array, my_criteria) {
 }
 
 // transform raw data to node-link dataset
-function getNetworkData(raw) {
+const getNetworkData = (raw) => {
 
   nodeNeighbor = [];
 
@@ -1413,11 +1049,11 @@ function getNetworkData(raw) {
 }
 
 // transform raw data to detailed node-link dataset (accident and cause)
-function getAccidentNetworkData(data, cause) {
+const getAccidentNetworkData = (data, cause) => {
 
   let network = {
     "nodes": [],
-    "links": []
+    "links": [],
   };
 
   let accidentNodes = [];
@@ -1528,10 +1164,10 @@ function getAccidentNetworkData(data, cause) {
   //array_move(network.nodes, causeIndex, 0); // array_move(arr, old_index, new_index)
   //network.nodes.splice(causeIndex, 1); // remove the selected cause node
 
-  return network;
+  return { network: network, accidentNum: accidentNodes.length, causeNum: causeNodes.length };
 }
 
-function getTreeData(data, cause) {
+const getTreeData = (data, cause) => {
 
 
   let treeData = {
@@ -1558,54 +1194,6 @@ function getTreeData(data, cause) {
   return treeData;
 }
 
-function getChordData(data) {
-
-  let accidents = [];
-  let detailCauses = [];
-  data.forEach(function (d) {
-
-    accidents.push(d.id);
-
-    for (i = 0; i < d.detailCause.split(",") < length; i++) {
-      let detailCause = d.detailCause.split(",")[i];
-      let detailCausesIndex = detailCauses.indexOf(detailCause);
-
-      if (detailCausesIndex === -1) {
-        detailCauses.push(d.detailCause.split(",")[i]);
-      }
-
-    }
-
-  });
-
-  let names = detailCauses.push("").concat(accidents);
-
-  var Names = ["X", "Y", "Z", "", "C", "B", "A", ""];
-
-  let respondents = 95, //Total number of respondents (i.e. the number that makes up the total group)
-    emptyPerc = 0.4, //What % of the circle should become empty
-    emptyStroke = Math.round(respondents * emptyPerc);
-  var matrix = [
-    [0, 0, 0, 0, 10, 5, 15, 0], //X
-    [0, 0, 0, 0, 5, 15, 20, 0], //Y
-    [0, 0, 0, 0, 15, 5, 5, 0], //Z
-    [0, 0, 0, 0, 0, 0, 0, emptyStroke], //Dummy stroke
-    [10, 5, 15, 0, 0, 0, 0, 0], //C
-    [5, 15, 5, 0, 0, 0, 0, 0], //B
-    [15, 20, 5, 0, 0, 0, 0, 0], //A
-    [0, 0, 0, emptyStroke, 0, 0, 0, 0] //Dummy stroke
-  ];
-  //Calculate how far the Chord Diagram needs to be rotated clockwise to make the dummy
-  //invisible chord center vertically
-  var offset = (2 * Math.PI) * (emptyStroke / (respondents + emptyStroke)) / 4;
-
-  return {
-    names: Names,
-    matrix: matrix,
-    offset: offset,
-  }
-}
-
 // https://stackoverflow.com/a/53107778
 const getPairs = array => (
   array.reduce((acc, val, i1) => [
@@ -1615,14 +1203,14 @@ const getPairs = array => (
   ], [])
 )
 
-function getJsonArrayIndex(JsonArray, searchKey, value) {
+const getJsonArrayIndex = (JsonArray, searchKey, value) => {
   let index = JsonArray.findIndex(function (item, k) {
     return item[searchKey] === value;
   });
   return index;
 }
 
-function pushNodeNeighbor(cause, causeNeighbor) {
+const pushNodeNeighbor = (cause, causeNeighbor) => {
 
   let index = getJsonArrayIndex(nodeNeighbor, "cause", cause);
 
@@ -1642,7 +1230,7 @@ function pushNodeNeighbor(cause, causeNeighbor) {
 
 }
 
-function isOutside(node) {
+const isOutside = (node) => {
 
   let position = {
     "horizontal": null,
@@ -1673,7 +1261,7 @@ function isOutside(node) {
       boolean = true;
       position.vertical = "top";
     }
-    
+
   } catch {
 
     console.log("isOutside error");
@@ -1685,11 +1273,11 @@ function isOutside(node) {
     "boolean": boolean,
     "position": position,
   };
-  
+
 }
 
 // https://stackoverflow.com/a/28191966
-function getKeyByValue(object, value) {
+const getKeyByValue = (object, value) => {
   return Object.keys(object).find(key => object[key] === value);
 }
 
@@ -1703,7 +1291,7 @@ function getCoords(query) {
 };
 
 // https://stackoverflow.com/a/5306832
-function array_move(arr, old_index, new_index) {
+const array_move = (arr, old_index, new_index) => {
   if (new_index >= arr.length) {
     var k = new_index - arr.length + 1;
     while (k--) {
@@ -1714,7 +1302,7 @@ function array_move(arr, old_index, new_index) {
   return arr; // for testing
 };
 
-function getCauseType(detailCause) {
+const getCauseType = (detailCause) => {
   let type;
   let naturalCauses = [
     "Water",
@@ -1736,7 +1324,7 @@ function getCauseType(detailCause) {
   if (detailCause === "Unknown" || detailCause === "unknown") {
     type = "Unknown";
   } else {
-    type = (naturalCauses.includes(detailCause))?"Natural environment": "Human error" ; 
+    type = (naturalCauses.includes(detailCause)) ? "Natural environment" : "Human error";
   }
   return type
 }

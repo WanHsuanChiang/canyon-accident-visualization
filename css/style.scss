@@ -5,6 +5,9 @@ $human-color: #009d9a;
 $natural-color: #6929c4;
 $uncategorized-color: #012749;
 
+$default-color: black;
+$bg-color: white;
+
 html , body {
     height: 100vh;
     margin: 0;
@@ -117,21 +120,30 @@ text {
 }
 
 
+
+
+// tooltips
+$main-tooltip-width: 200px;
+$accident-tooltip-width: 400px;
+$tooltip-padding: 2em;
+
 .tooltip {
 
+    font-size: x-small;
+
     &.main-cause-tooltip {
-        width: 200px;
+        width: $main-tooltip-width;
     }
 
     &.accident-tooltip {
-        width: 400px;
+        width: $accident-tooltip-width;
     }
     
-    background-color: white;
+    background-color: $bg-color;
     border-width: 1px;
     border-style: solid;
     border-radius: 5px;    
-    padding: 1em 1em;
+    padding: $tooltip-padding;
     position: absolute;
     opacity: 0.9;
     animation: pulse 10s infinite;
@@ -160,8 +172,35 @@ text {
             color: $uncategorized-color; 
         }
     }
-    &[highlighted="false"] {
+    &[highlighted=false] {
         opacity: 0.3;
+    }
+    &[highlighted=true] {
+        opacity: 1;
+    }
+}
+
+
+.tooltip {
+    hr {
+        margin: 2em 0em;
+        opacity: 0.5;
+    }
+    .analysis-title {
+        font-size:  xx-small;
+        color: lighten($default-color, 70%);
+    }
+    .view-more {
+        text-align: right;
+        margin: 1em 0em;
+        width: fit-content;
+        a:link {
+            text-decoration: none;
+            padding: 0.5em 1em;
+            border-radius: 5px; 
+        }
+        
+        
     }
 }
 
@@ -182,7 +221,7 @@ text {
 
 
 .tooltip-list {    
-    font-size: x-small;
+
     & > div {
         display: flex;
         flex-direction: row;
@@ -197,7 +236,11 @@ text {
     }    
 }
 
-.injury-chart svg {
+.injury-chart {
+    //background-color: purple;
+    height: 50px;
+    margin: 1em 0;
+    svg {
     //background-color: black;
     //width:calc(100%-2em);
     //height: inherit;
@@ -210,78 +253,149 @@ text {
     text {
         font-size: 3px;
     }
-
+    }
 }
 
-.injury-chart {
-    //background-color: purple;
-    height: 50px;
+.tooltip-analysis {
     margin: 1em 0;
+    width: 100%;
+    // https://medium.com/@dvmsoni3132/easy-truncate-multi-line-ellipsis-with-pure-css-e0d24d68078e
+    max-width: calc($accident-tooltip-width - $tooltip-padding*2);
+    -webkit-line-clamp: 5;
+   -webkit-box-orient: vertical;
+    overflow:hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box; 
 }
 
 
+
+
+
+/*
+
+$injury-color-max: #67000d;
+$injury-color-min: #fff5f0;
 
 [injury-max = "Fatality"] {
+    $color: #67000d;
     rect , circle {
-        fill: #67000d;
+        fill: $color;
     } 
+    .view-more a:link {
+        background-color: $color;
+        color: $injury-color-min;
+    }
 }
 [injury-max = "Hypothermia"] {
+    $color: #970b13;
     rect , circle {
-        fill: #970b13;
-    }     
+        fill: $color;
+    } 
+    .view-more a:link {
+        background-color: $color;
+        color: $injury-color-min;
+    }
 }
 [injury-max = "Amputation"]{
-    rect, circle{
-        fill: #bb151a;
+    $color: #bb151a;
+    rect , circle {
+        fill: $color;
     } 
+    .view-more a:link {
+        background-color: $color;
+        color: $injury-color-min;
+    }
 }
 [injury-max = "Fracture"] {
+    $color: #d92723;
     rect , circle {
-        fill: #d92723;
-    }     
+        fill: $color;
+    } 
+    .view-more a:link {
+        background-color: $color;
+        color: $injury-color-min;
+    }   
 }
 [injury-max = "Sprain or Strain"] {
-    rect  , circle{
-        fill: #ef4533;
+    $color: #ef4533;
+    rect , circle {
+        fill: $color;
+    } 
+    .view-more a:link {
+        background-color: $color;
+        color: $injury-color-min;
     }
 }
 [injury-max = "Abrasion or Laceration"] {
-    rect , circle{
-        fill: #f9694c;
-    }    
+    $color: #f9694c;
+    rect , circle {
+        fill: $color;
+    } 
+    .view-more a:link {
+        background-color: $color;
+        color: $injury-color-max;
+    } 
 }
 [injury-max = "Concussion or Head Trauma"] {
+    $color: #fc8a6b;
     rect , circle {
-        fill: #fc8a6b;
+        fill: $color;
     } 
+    .view-more a:link {
+        background-color: $color;
+        color: $injury-color-max;
+    }
 }
 [injury-max = "Bruise"] {
+    $color: #fcaa8e;
     rect , circle {
-        fill: #fcaa8e;
+        fill: $color;
     } 
+    .view-more a:link {
+        background-color: $color;
+        color: $injury-color-max;
+    }
 }
 [injury-max = "Dislocation"] {
+    $color: #fdc9b4;
     rect , circle {
-    fill: #fdc9b4;    
+        fill: $color;
+    } 
+    .view-more a:link {
+        background-color: $color;
+        color: $injury-color-max;
     }
 }
 [injury-max = "Psychological"] {
-    rect, circle {
-    fill: #fee3d6;
+    $color: #fee3d6;
+    rect , circle {
+        fill: $color;
+    } 
+    .view-more a:link {
+        background-color: $color;
+        color: $injury-color-max;
     }
 }
 [injury-max = "No Injury or Near Miss"]{
+    $color: #fff5f0;
     rect , circle {
-    fill: #fff5f0;
+        fill: $color;
+    } 
+    .view-more a:link {
+        background-color: $color;
     }
 }
 [injury-max = "Others"] {
+    $color:  #cccccc;
     rect , circle {
-    fill: #cccccc;
+        fill: $color;
+    } 
+    .view-more a:link {
+        background-color: $color;
     }
 }
-
+*/
 
 .dummy {
     visibility: hidden;
