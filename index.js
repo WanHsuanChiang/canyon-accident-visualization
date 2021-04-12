@@ -149,7 +149,8 @@ function draw(data) {
 
   svg.attr("id", "main-chart");
 
-  let network = getNetworkData(data);
+  let networkSet = getNetworkData(data);
+  let network = networkSet.network;
 
   ctx.GRPAH = "cause";
   status.screen = "cause";
@@ -244,10 +245,11 @@ function draw(data) {
     .data(nodes)
     .enter().append("g");
 
-  var circles = node.append("circle")
-    .attr("r", function (d) { return Math.sqrt(d.value) * 15; })
-  //.attr("class", function (d) { return d.group; })
-  //.attr("fill", function(d) { return color(d.group); })    
+
+  const radiusScale = d3.scaleSqrt().domain([1, networkSet.maxValue]).range([15, 100]);
+  let circles = node.append("circle")
+    .attr("r", function (d) { return radiusScale(d.value) })
+
 
   let lables = node.append("text")
     .text(function (d) {
@@ -407,7 +409,7 @@ function draw(data) {
           .on("end", null));
 
 
-      //simulation.stop();
+      simulation.stop();
 
       drawDetail(data.filter(function (d) { return d.cause.includes(clickedNode.attr("title")) }), clickedNode.attr("title")); // (data, cause)
       //drawChord(data.filter(function (d) { return d.cause.includes(clickedNode.attr("title")) }));
@@ -426,7 +428,7 @@ const drawDetail = (data, cause) => {
 
   status.isHover = false;
   status.isTooltip = false;
-  d3.select(".tooltip").remove();
+  d3.selectAll(".tooltip").remove();
   svg.attr("id", "detail-chart");
 
   let detailStatus = {
@@ -444,14 +446,8 @@ const drawDetail = (data, cause) => {
 
   const links = network.links.map(d => Object.create(d));
   const nodes = network.nodes.map(d => Object.create(d));
-  const radius = 20;
+  const radius = 12;
   const forceCenter = { x: width / 2, y: height / 4 };
-
-
-  console.log(networkSet)
-
-  // determine layout (force simulation)
-
   const layout = getLayout(networkSet.causeNum, networkSet.accidentNum);
   function getLayout(causeNum, accidentNum) {
     if (causeNum >= 30 || accidentNum >= 30) {
@@ -459,53 +455,40 @@ const drawDetail = (data, cause) => {
     } else { return "radial" }
   }
 
-  let simulation;
-  if (layout === "horizontal") {
 
-    simulation = d3.forceSimulation()
-      .force("link", d3.forceLink().id(d => d.id).strength(0))
-      .force("charge", d3.forceManyBody().strength(-500))
-      .force("center", d3.forceCenter(0, 0))
-      .force("collide", d3.forceCollide().strength(1).radius(function (d) { return (d.id === "dummy") ? 1 : 20 }))
-      .force("r", d3.forceRadial(function (d) {
-        let val;
-        if (layout === "horizontal") { val = 0; }
-        else { val = (d.category === "accident") ? 100 : 300 }
-        return val;
-      }, 0, -100).strength(0))
-      .force("x", d3.forceX())
-      .force("y", d3.forceY(function (d) { return (d.category === "accident") ? -100 : 100; }).strength(2))
-
-  } else {
-    simulation = d3.forceSimulation()
-      .force("link", d3.forceLink().id(d => d.id).strength(0))
-      .force("charge", d3.forceManyBody().strength(-500))
-      .force("center", d3.forceCenter(0, 0))
-      .force("collide", d3.forceCollide().strength(1).radius(function (d) { return (d.id === "dummy") ? 1 : 20 }))
-      .force("r", d3.forceRadial(function (d) {
-        let val;
-        if (d.id === cause) {
-          val = 0;
-        } else {
-          val = (d.category === "accident") ? 100 : 300
-        }
-        return val;
-      }, 0, -100).strength(2))
-      .force("x", d3.forceX())
-      .force("y", d3.forceY(function (d) {
-        return (d.category === "accident") ? 500 : 300;
-      }));
-  }
-
+  console.log(networkSet)
 
   // detail with center
+  d3.select(".nodes").attr("class", "center");
+  const center = d3.select(".center .node");
+  /*
   let centerNode = d3.select('[title = "' + cause + '"]').attr("class", d3.select('[title = "' + cause + '"]').attr("class") + " center-node")
     .call(d3.drag()
       .on("start", dragstarted)
       .on("drag", dragged)
       .on("end", dragended));;
+  svg.selectAll('*').remove();
+  */
 
-  let link = svg.insert("g", "g.nodes")
+  const position = getCoords(".center");
+  const transform = () => {
+
+    dy = -(position.cy + position.height);
+    return "translate(0," + dy + ")scale(3)"
+  }
+  center.transition().duration(1500).attr("transform", transform)
+  d3.select(".center text").remove();
+  // Usage!
+  sleep(1500).then(() => {
+    // Do something after the sleep!
+    center.append("text").attr("text-anchor", "middle").text("Accidents associated with " + cause).transition().duration(1500).attr("transform", "translate(0,100)");
+  });
+  
+
+
+
+  //let link = svg.insert("g", "g.nodes")
+  let link = svg.append("g")
     .attr("class", "links")
     .selectAll("line")
     .data(links)
@@ -516,13 +499,25 @@ const drawDetail = (data, cause) => {
     .attr("stroke-width", 4);
 
 
-  let node = d3.select(".nodes").selectAll("g")
+  let node = svg.append("g")
+    .attr("class", "nodes")
+    .selectAll("g")
     .data(nodes)
     .enter().append("g")
     .attr("category", function (d) { return d.category })
     .attr("name", function (d) { return d.id })
     .attr("class", function (d) { return (d.id === "dummy") ? "node dummy" : "node"; });
 
+  /*
+  
+    let node = d3.select(".nodes").selectAll("g")
+    .attr("class","nodes")
+      .data(nodes)
+      .enter().append("g")
+      .attr("category", function (d) { return d.category })
+      .attr("name", function (d) { return d.id })
+      .attr("class", function (d) { return (d.id === "dummy") ? "node dummy" : "node"; });
+  */
   d3.selectAll('[category="accident"]').attr("injury-max", function (d) { return d.injuryMax });
   d3.selectAll('[category="cause"]').attr("type", function (d) { return getCauseType(d.id) });
 
@@ -563,6 +558,54 @@ const drawDetail = (data, cause) => {
 
 
 
+
+  // determine layout (force simulation)
+
+  function isAccident(d) {
+    if (d.category === "accident") { return true; }
+    else { false }
+  }
+  const injuryLength = Object.keys(injuryRating).length;
+  const injuryScale = d3.scaleLinear().domain([1, injuryLength]).range([-width / 4, width / 4]);
+  let simulation;
+  if (layout === "horizontal") {
+
+    simulation = d3.forceSimulation()
+      .force("link", d3.forceLink().id(d => d.id).strength(0))
+      .force("charge", d3.forceManyBody().strength(-600))
+      //.force("center", d3.forceCenter(0, 0))
+      .force("collide", d3.forceCollide().strength(1).radius(function (d) { return (d.id === "dummy") ? 1 : 20 }))
+      //.force("r", d3.forceRadial(0, 0, -100).strength(0))
+      .force("x", d3.forceX(function (d) {
+        if (isAccident(d)) { return injuryScale(d.injuryValue) }
+        else { return injuryScale(d.injuryValue) }
+      }).strength(0.3))
+      .force("y", d3.forceY(function (d) { return (isAccident(d)) ? -100 : height / 4; }).strength(5))
+
+  } else {
+    simulation = d3.forceSimulation()
+      .force("link", d3.forceLink().id(d => d.id).strength(0))
+      .force("charge", d3.forceManyBody().strength(-500))
+      .force("center", d3.forceCenter(0, 0))
+      .force("collide", d3.forceCollide().strength(1).radius(function (d) { return (d.id === "dummy") ? 1 : 20 }))
+      .force("r", d3.forceRadial(function (d) {
+        let val;
+        if (d.id === cause) {
+          val = 0;
+        } else {
+          val = (isAccident(d)) ? 100 : 300
+        }
+        return val;
+      }, 0, -100).strength(2))
+      .force("x", d3.forceX())
+      .force("y", d3.forceY(function (d) {
+        return (isAccident(d)) ? 500 : 300;
+      }));
+  }
+
+
+
+
   simulation
     .nodes(nodes)
     .on("tick", ticked);
@@ -578,15 +621,26 @@ const drawDetail = (data, cause) => {
       .attr("x2", function (d) { return d.target.x; })
       .attr("y2", function (d) { return d.target.y; });
 
-    node
-      .attr("transform", function (d) {
-        return "translate(" + d.x + "," + d.y + ")";
-      });
+
+    if (layout === "horizontal") {
+      node
+        .attr("transform", function (d) {
+          //console.log(d.injuryValue)
+          return "translate(" + d.x + "," + d.y + ")";
+          //return "translate(" + injuryScale(d.injuryValue)+ "," + 100 + ")";
+        });
+    } else {
+      node
+        .attr("transform", function (d) {
+          return "translate(" + d.x + "," + d.y + ")";
+        });
+
+    }
+
     /*
    
          node.attr("cx", function(d) { return d.x = Math.max(radius, Math.min(width - radius, d.x)); })
          .attr("cy", function(d) { return d.y = Math.max(radius, Math.min(height - radius, d.y)); });
-   
     
          node
          .attr("transform", function (d) {
@@ -596,8 +650,9 @@ const drawDetail = (data, cause) => {
            console.log({dx: dx, "d.x": d.x, radius: radius,svgPositionX : svgPosition.x, svgPositionWidth: svgPosition.width , width: width});
            return "translate(" + dx + "," + dy + ")";
          });
-    
-      */
+  */
+
+
 
   };
   // drag and drop 
@@ -643,7 +698,6 @@ const drawDetail = (data, cause) => {
     if (!detailStatus.isDragging && !detailStatus.isTooltipHover) {
 
       detailStatus.currentNode = d.id;
-      console.log("Fire Enter: " + detailStatus.currentNode);
 
       //d3.selectAll(".tooltip").remove();
 
@@ -653,7 +707,7 @@ const drawDetail = (data, cause) => {
 
       if (d.category === "accident") {
 
-        drawAccidentTooltip(network.nodes[d.index]);       
+        drawAccidentTooltip(network.nodes[d.index]);
 
       }
 
@@ -670,15 +724,15 @@ const drawDetail = (data, cause) => {
       d3.selectAll(".node").attr("highlighted", null);
       d3.selectAll(".link").attr("highlighted", null);
 
-      d3.select('.tooltip[name="' + d.id + '"]').style("transition",'opacity '+sleepTime+'ms');
-      d3.select('.tooltip[name="' + d.id + '"]').style("opacity","0")
+      d3.select('.tooltip[name="' + d.id + '"]').style("transition", 'opacity ' + sleepTime + 'ms');
+      d3.select('.tooltip[name="' + d.id + '"]').style("opacity", "0")
 
       // Usage!
       sleep(sleepTime).then(() => {
         // Do something after the sleep!
 
         if (!detailStatus.isTooltipHover && detailStatus.currentNode !== d.id && detailStatus.currentNode === null) {
-          
+
           d3.select('.tooltip[name="' + d.id + '"]').remove();
           detailStatus.isTooltip = false;
 
@@ -690,8 +744,6 @@ const drawDetail = (data, cause) => {
     }
 
   }
-
-
 
 
   const drawAccidentTooltip = (nodeData) => {
@@ -710,9 +762,9 @@ const drawDetail = (data, cause) => {
 
     if (isDraw) {
 
-      d3.selectAll('.tooltip').remove();      
+      d3.selectAll('.tooltip').remove();
 
-      console.log("Start draw tooltip");
+      //console.log("Start draw tooltip");
 
       detailStatus.isTooltip = true;
       detailStatus.currentTooltip = nodeData.id;
@@ -747,7 +799,11 @@ const drawDetail = (data, cause) => {
       // cause
       tooltipList.append("div").attr("class", "cause");
       d3.select(".tooltip .cause").append("div").html("Causes");
-      d3.select(".tooltip .cause").append("div").html(nodeData.detailCause.split(",").join(", "));
+      d3.select(".tooltip .cause").append("div").html(nodeData.detailCause.join(", "));
+      // injury
+      tooltipList.append("div").attr("class", "injury");
+      d3.select(".tooltip .injury").append("div").html("Injury");
+      d3.select(".tooltip .injury").append("div").html(nodeData.injury.join(", "));
 
       // accident analysis    
 
@@ -830,19 +886,16 @@ const drawDetail = (data, cause) => {
 
           detailStatus.isTooltipHover = true;
           detailStatus.isNodeHover = false;
-
-          d3.selectAll('.tooltip:not([name="' + nodeData.id + '"])').remove();
-
-
-          //d3.selectAll('.tooltip[name]:not[name="'+nodeData.id+'"]').remove();
-          
           d3.select(this).attr("highlighted", true);
-          d3.select(this).style("opacity",null);
+          d3.select(this).style("opacity", null);
+          highlight(nodeData, data);
+
         })
         .on("mouseleave", function () {
           detailStatus.isTooltipHover = false;
           d3.select(this).remove();
           detailStatus.isTooltip = false;
+          removeHighlight();
         })
 
 
@@ -864,7 +917,7 @@ const highlight = (nodeData, data) => {
   // highlight nodes
   d3.selectAll(".node").attr("highlighted", false);
   targetNode.attr("highlighted", true);
-  d3.select(".center-node").attr("highlighted", true);
+  d3.select(".center").attr("highlighted", true);
 
 
   if (nodeData.category === "accident") {
@@ -885,6 +938,11 @@ const highlight = (nodeData, data) => {
   d3.selectAll('[source="' + nodeData.id + '"]').attr("highlighted", true);
   d3.selectAll('[target="' + nodeData.id + '"]').attr("highlighted", true);
 
+}
+
+const removeHighlight = () => {
+  d3.selectAll('.node').attr('highlighted', null);
+  d3.selectAll('.link').attr('highlighted', null);
 }
 
 const drawFilter = (array) => {
@@ -1056,15 +1114,15 @@ const getNetworkData = (raw) => {
     "links": []
   };
 
+  let maxValue = 1;
+
   raw.forEach(function (d) {
     //deal with cause
     let causes = d.cause.split(",").sort();
     let injuries = d.injury.split(",").sort();
     let accident = d.id;
 
-
     for (i = 0; i < causes.length; i++) {
-
       // nodes
 
       let cause = causes[i];
@@ -1085,6 +1143,7 @@ const getNetworkData = (raw) => {
         let value = network.nodes[nodeIndex].value;
         network.nodes[nodeIndex].value = value + 1;
         network.nodes[nodeIndex].accidents.push(accident);
+        if (network.nodes[nodeIndex].value > maxValue) { maxValue = network.nodes[nodeIndex].value }
       }
 
       // links
@@ -1122,7 +1181,7 @@ const getNetworkData = (raw) => {
     };
   });
 
-  return network;
+  return { network: network, maxValue: maxValue };
 }
 
 // transform raw data to detailed node-link dataset (accident and cause)
@@ -1135,15 +1194,16 @@ const getAccidentNetworkData = (data, cause) => {
 
   let accidentNodes = [];
   let causeNodes = [];
-
-  // for center cause node
-  causeNodes.push({
-    "id": cause,
-    "name": cause,
-    "category": "cause",
-    "value": 1,
-    //"accidents": d.id.split(),
-  });
+  /*
+    // for center cause node
+    causeNodes.push({
+      "id": cause,
+      "name": cause,
+      "category": "cause",
+      "value": 1,
+      //"accidents": d.id.split(),
+    });
+    */
 
   data.forEach(function (d) {
 
@@ -1155,7 +1215,7 @@ const getAccidentNetworkData = (data, cause) => {
       "value": 1,
       "category": "accident",
       "date": d.date,
-      "detailCause": d.detailCause,
+      "detailCause": d.detailCause.split(),
       "injury": d.injury.split(),
       "injuryMax": d.injuryMax,
       "injuryValue": injuryRating[d.injuryMax],
@@ -1189,11 +1249,14 @@ const getAccidentNetworkData = (data, cause) => {
             "category": "cause",
             "value": 1,
             "accidents": d.id.split(),
+            "injuryValue": injuryRating[d.injuryMax],
           });
         } else {
           // if the node is exist
-          let value = causeNodes[nodeIndex].value;
-          causeNodes[nodeIndex].value = value + 1;
+          // count the average injury value (the weight of the cause node)
+          causeNodes[nodeIndex].injuryValue = ((causeNodes[nodeIndex].injuryValue * causeNodes[nodeIndex].value) + injuryRating[d.injuryMax]) / (causeNodes[nodeIndex].value + 1)
+          // count how many accident
+          causeNodes[nodeIndex].value = causeNodes[nodeIndex].value + 1;
           causeNodes[nodeIndex].accidents.push(d.id);
         }
 
@@ -1208,26 +1271,29 @@ const getAccidentNetworkData = (data, cause) => {
       }
 
     }
+    /*
     // source = accident, target = main cause
     network.links.push({
       "source": d.id,
       "target": cause,
       "value": 1,
     });
+    */
   });
 
 
-  accidentNodes.sort(function (a, b) { return -a.injuryValue - -b.injuryValue });
+  accidentNodes.sort(function (a, b) { return +a.injuryValue - +b.injuryValue });
+  causeNodes.sort(function (a, b) { return +a.injuryValue - +b.injuryValue });
 
 
-  let dummyAccidents = new Array(accidentNodes.length).fill({
+  const dummyAccidents = new Array(accidentNodes.length).fill({
     "id": "dummy",
     "name": "Dummy",
     "category": "accident",
     "value": 0,
   });
 
-  let dummyCauses = new Array(causeNodes.length).fill({
+  const dummyCauses = new Array(causeNodes.length).fill({
     "id": "dummy",
     "name": "Dummy",
     "category": "cause",
@@ -1360,9 +1426,9 @@ const getKeyByValue = (object, value) => {
 
 // Adpat from https://stackoverflow.com/a/18561829
 function getCoords(query) {
-
-  let element = document.querySelector(query);
-  let coord = element.getBoundingClientRect();
+  let coord = document.querySelector(query).getBoundingClientRect();
+  coord.cx = coord.x + coord.width / 2;
+  coord.cy = coord.y + coord.height / 2;
   return coord;
 
 };
