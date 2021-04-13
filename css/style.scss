@@ -253,23 +253,43 @@ $tooltip-padding: 2em;
     }    
 }
 
-.injury-chart {
+.main-cause-tooltip .injury-chart {
     //background-color: purple;
     height: 50px;
     margin: 1em 0;
     svg {
-    //background-color: black;
-    //width:calc(100%-2em);
-    //height: inherit;
-    width: 200px;
-    height: auto;
-    rect {
-        stroke-width: 0.5;
-        stroke: white;
+        //background-color: black;
+        //width:calc(100%-2em);
+        //height: inherit;
+        width: 200px;
+        height: auto;
+        rect {
+            stroke-width: 0.5;
+            stroke: white;
+        }
+        text {
+            font-size: 3px;
+        }
     }
+}
+
+.accident-tooltip .injury-chart {
+    //background-color: purple;
+    height: 30px;
+    margin: 1em 0;
     text {
-        font-size: 3px;
+        font-size: 6px;
     }
+    svg {
+        //background-color: black;
+        //width:calc(100%-2em);
+        //height: inherit;
+        width: 400px;
+        height: auto;
+        rect {
+            stroke-width: 0.5;
+            stroke: white;
+        }
     }
 }
 
@@ -417,8 +437,7 @@ $injury-color-min: #fff5f0;
 .dummy {
     visibility: hidden;
 }
-/*
-.center .node {
-    transform: translateY(-200px);
+.title text{
+    fill: $bg-color;
+    font-size: 20px;
 }
-*/

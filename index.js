@@ -27,7 +27,7 @@ let status = {
 let filter = {
   canyonRating: "FR", //"FR","ACA"
 }
-let injuryList = [];
+//let injuryList = [];
 let nodeNeighbor = [];
 let analysisData;
 
@@ -80,9 +80,32 @@ const injuryRating = {
   "Others": 0,
 }
 
-const injuryColor = function (injury) {
-  let rating = injuryRating[injury];
-  if (rating === 0) {
+const injuryList = [
+  { name: "Others", value: 0 },
+  { name: "No Injury or Near Miss", value: 1 },
+  { name: "Psychological", value: 2 },
+  { name: "Dislocation", value: 3 },
+  { name: "Bruise", value: 4 },
+  { name: "Concussion or Head Trauma", value: 5 },
+  { name: "Abrasion or Laceration", value: 6 },
+  { name: "Sprain or Strain", value: 7 },
+  { name: "Fracture", value: 8 },
+  { name: "Amputation", value: 9 },
+  { name: "Hypothermia", value: 10 },
+  { name: "Fatality", value: 11 },
+]
+
+const injuryColor = function (value) {
+  let rating;
+  if (value === parseInt(value, 10)) {
+    // if input is an integer
+    rating = value;
+  } else {
+    // if input is injuty type string
+    rating = injuryRating[value];
+  }
+
+  if (rating == 0) {
     return "#cccccc";
   } else {
     //const colorScheme = d3.scaleOrdinal(d3.schemeReds[Object.keys[injuryRating]-1]);
@@ -478,12 +501,16 @@ const drawDetail = (data, cause) => {
   }
   center.transition().duration(1500).attr("transform", transform)
   d3.select(".center text").remove();
-  // Usage!
+
+  // draw the title
   sleep(1500).then(() => {
     // Do something after the sleep!
-    center.append("text").attr("text-anchor", "middle").text("Accidents associated with " + cause).transition().duration(1500).attr("transform", "translate(0,100)");
+    svg.append("g").attr("class", "title").append("text").attr("text-anchor", "middle").text("Accidents associated with " + cause)
+      .attr("x", 0)
+      .attr("y", -height / 2)
+      .transition().duration(1500).attr("transform", "translate(0," + height / 10 + ")");
   });
-  
+
 
 
 
@@ -769,6 +796,17 @@ const drawDetail = (data, cause) => {
       detailStatus.isTooltip = true;
       detailStatus.currentTooltip = nodeData.id;
 
+
+      let indvInjuries = [];
+      for (i = 0; i < nodeData.injury.length; i++) {
+        indvInjuries.push({
+          name: nodeData.injury[i],
+          value: injuryRating[nodeData.injury[i]],
+        })
+      };
+      indvInjuries.sort(function (a, b) { return +a.value - +b.value });
+
+
       let tooltip = d3.select("body").append("div")
         .attr("class", "tooltip accident-tooltip")
         .attr("injury-max", nodeData.injuryMax)
@@ -777,6 +815,129 @@ const drawDetail = (data, cause) => {
       let tooltipTitle = tooltip.append("div").attr("class", "tooltip-title");
       tooltipTitle.append("h4").html(nodeData.canyon + ' (' + nodeData.date + ')');
       //tooltipTitle.append("span").attr("class", "date").html(nodeData.date);
+
+
+      // start injury chart
+
+      const space = 2;
+      let injurySvg = tooltip.append("div")
+        .attr("class", "injury-chart")
+        .style("height", function () { return (indvInjuries.length > 1) ? "100px" : "60px" })
+        .append("svg")
+        .attr("viewBox", function () { return (indvInjuries.length > 1) ? "0 0 200 100" : "0 0 200 60" });
+      //.attr("preserveAspectRatio", "xMidYMid meet");
+
+
+
+
+      let injuryBar = injurySvg.selectAll("g").attr("class", "injury-bars")
+        .data(injuryList)
+        .enter().append("g")
+        .attr("fill", function (d) { return injuryColor(d.name) })
+        .attr("name", function (d) { return d.name })
+        .attr("value", function (d) { return d.value });
+
+      injuryBar.append("rect")
+        .attr("width", (1 / injuryList.length * 100) + "%")
+        .attr("height", "5px")
+        .attr("y", function () { return (indvInjuries.length > 1) ? 20 : 10; })
+        .attr("x", function (d) { return (d.value / injuryList.length) * 100 + "%" })
+
+      const chartBBox = injurySvg.node().getBBox();
+
+      for (i = 0; i < indvInjuries.length; i++) {
+
+        let bar = d3.select('.injury-chart [name="' + indvInjuries[i].name + '"]');// find the injury rectangle
+        let bbox = bar.node().getBBox();// find the rect position
+        let text;
+        let textBBox;
+        let textX = bbox.x + bbox.width / 2;
+        let textY;
+        let triangle;
+
+        if (i & 1) {
+          // if i is odd
+
+          // draw text first
+          text = bar.insert("text");
+          text.text(indvInjuries[i].name).attr("text-anchor", "middle")
+          textBBox = text.node().getBBox(); // only want to know width & height
+          // then draw triangle
+          triangle = bar.insert("path", '[name="' + indvInjuries[i].name + '"] rect').attr("d", path(bbox, "top"));
+          let pathBBox = triangle.node().getBBox();
+          textY = pathBBox.y - textBBox.height - space +6;
+
+        } else {
+          // if i is even
+
+          // draw triangle first
+          triangle = bar.append("path").attr("d", path(bbox, "bottom"));
+          let pathBBox = triangle.node().getBBox();
+          // then draw text
+          text = bar.append("text")
+          text.text(indvInjuries[i].name).attr("text-anchor", "middle")
+          textBBox = text.node().getBBox(); // only want to know width & height
+          console.log(pathBBox)
+          textY =  pathBBox.y + pathBBox.height + space + 6;
+          /*
+
+
+          prevText = { x: textX, width: bbox.width };
+          
+          if (i > 0) {
+
+            let prevText = d3.select('.injury-chart [name="' + indvInjuries[i - 1].name + '"]').node().getBBox();
+            if (prevText.x + prevText.width > textX) {
+              textY = textY + textBBox.height;
+            }
+
+          }
+          */
+
+        }
+
+
+        if (textX + textBBox.width > chartBBox.width) {
+          textX = chartBBox.width - textBBox.width / 2
+        } else if (textX < 0) {
+          textX = textBBox.width / 2 + 10;
+        }
+        text.attr("x", textX).attr("y", textY)
+
+      }
+
+
+      // draw equilateral triangle
+      function path(bbox, position) {
+
+        const length = 4;
+        //const barCoords = getCoords('.injury-chart [name="'+ injury +'"] rect');          
+        const start = {
+          x: bbox.x + bbox.width / 2,
+          y: (position === "bottom") ? bbox.y + bbox.height + space : bbox.y - space,
+        }
+        const left = {
+          x: start.x - length / 2,
+          y: (position === "bottom") ? start.y + Math.sqrt(3) * (length / 2) : start.y - Math.sqrt(3) * (length / 2)
+        }
+        const right = {
+          x: start.x + length / 2,
+          y: left.y,
+        }
+
+        return "M" + start.x + " " + start.y + " L" + left.x + " " + left.y + " L" + right.x + " " + right.y + "Z";
+      }
+
+
+
+
+
+
+
+
+
+
+
 
       let tooltipList = tooltip.append("div").attr("class", "tooltip-list");
       // canyon
@@ -796,15 +957,16 @@ const drawDetail = (data, cause) => {
       tooltipList.append("div").attr("class", "rating");
       d3.select(".rating").append("div").html("Canyon Rating");
       d3.select(".rating").append("div").html((filter.canyonRating === "FR") ? nodeData.canyonRatingFR : nodeData.canyonRatingACA);
+      /*
       // cause
       tooltipList.append("div").attr("class", "cause");
       d3.select(".tooltip .cause").append("div").html("Causes");
-      d3.select(".tooltip .cause").append("div").html(nodeData.detailCause.join(", "));
+      d3.select(".tooltip .cause").append("div").html(nodeData.detailCause.join(", "));     
       // injury
       tooltipList.append("div").attr("class", "injury");
       d3.select(".tooltip .injury").append("div").html("Injury");
       d3.select(".tooltip .injury").append("div").html(nodeData.injury.join(", "));
-
+      */
       // accident analysis    
 
       // load analysis data for the first place
@@ -917,7 +1079,7 @@ const highlight = (nodeData, data) => {
   // highlight nodes
   d3.selectAll(".node").attr("highlighted", false);
   targetNode.attr("highlighted", true);
-  d3.select(".center").attr("highlighted", true);
+  d3.select(".center .node").attr("highlighted", true);
 
 
   if (nodeData.category === "accident") {
@@ -1173,12 +1335,14 @@ const getNetworkData = (raw) => {
 
       }
     }
+    /*
     // deal with injury
     for (i = 0; i < injuries.length; i++) {
       if (injuryList.indexOf(injuries[i]) === -1) {
         injuryList.push(injuries[i]);
       }
     };
+    */
   });
 
   return { network: network, maxValue: maxValue };
@@ -1215,8 +1379,8 @@ const getAccidentNetworkData = (data, cause) => {
       "value": 1,
       "category": "accident",
       "date": d.date,
-      "detailCause": d.detailCause.split(),
-      "injury": d.injury.split(),
+      "detailCause": d.detailCause.split(","),
+      "injury": d.injury.split(","),
       "injuryMax": d.injuryMax,
       "injuryValue": injuryRating[d.injuryMax],
       "area": d.area,
@@ -1234,18 +1398,17 @@ const getAccidentNetworkData = (data, cause) => {
     for (i = 0; i < detailCauses.length; i++) {
 
       // cause nodes
-      let detailCause = detailCauses[i];
 
-      if (detailCause !== cause) {
+      if (detailCauses[i] !== cause) {
         // if detail cause equals selected cause, then do not do anything
-        let nodeIndex = getJsonArrayIndex(causeNodes, "id", detailCause);
+        let nodeIndex = getJsonArrayIndex(causeNodes, "id", detailCauses[i]);
 
         if (nodeIndex === -1) {
           // if the node is not exist
 
           causeNodes.push({
-            "id": detailCause,
-            "name": detailCause,
+            "id": detailCauses[i],
+            "name": detailCauses[i],
             "category": "cause",
             "value": 1,
             "accidents": d.id.split(),
@@ -1264,7 +1427,7 @@ const getAccidentNetworkData = (data, cause) => {
 
         network.links.push({
           "source": d.id,
-          "target": detailCause,
+          "target": detailCauses[i],
           "value": 1,
         });
 
