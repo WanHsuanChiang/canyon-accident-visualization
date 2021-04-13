@@ -42,15 +42,13 @@ html, body {
   top: 0;
   width: 25%;
   padding: 1em;
+  color: gray h1;
+  color-font-size: x-large;
+  color-text-transform: capitalize;
 }
 
 #sidebar[highlighted=false] {
   opacity: 0.2;
-}
-
-#sidebar h1 {
-  font-size: x-large;
-  text-transform: capitalize;
 }
 
 #sidebar h2 {
@@ -173,6 +171,25 @@ svg {
 
 text {
   font-size: 10px;
+}
+
+.center .node {
+  cursor: url("/source/back.svg"), auto !important;
+  -webkit-animation: fadein 5s linear 1 normal forwards;
+  opacity: 0.5;
+}
+
+.center .node:hover {
+  opacity: 1 !important;
+}
+
+@-webkit-keyframes fadein {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.3;
+  }
 }
 
 .tooltip {

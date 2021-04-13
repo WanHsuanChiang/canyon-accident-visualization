@@ -9,7 +9,6 @@ const analysisDataUrl = "data/accident-analysis.csv";
 const width = window.innerWidth;
 const height = window.innerHeight;
 const svg = d3.select("svg");
-const svgPosition = getCoords("svg");
 const isDebug = false;
 let ctx = {
 
@@ -181,17 +180,6 @@ function drawSidebar() {
 
   item.append("div").style("background-color", function (d) { return injuryColor(d.name) })
   item.append("div").html(function (d) { return d.name })
-
-
-  //d3.select("html").on("mouseover",mouseover)
-
-  function mouseover() {
-    console.log("fire")
-  }
-
-
-
-
 
 }
 
@@ -468,16 +456,14 @@ const drawDetail = (data, cause) => {
     currentTooltip: null,
   }
 
-
   let networkSet = getAccidentNetworkData(data, cause);
   let network = networkSet.network;
-
-  console.log(networkSet)
 
   const links = network.links.map(d => Object.create(d));
   const nodes = network.nodes.map(d => Object.create(d));
   const radius = 12;
   const forceCenter = { x: width / 2, y: height / 4 };
+
   // determine layout
   const isHorizontal = (networkSet.causeNum >= 20 || networkSet.accidentNum >= 20) ? true : false;
   function isAccident(d) {
@@ -493,14 +479,25 @@ const drawDetail = (data, cause) => {
 
 
   // detail with center
-  d3.select(".nodes").attr("class", "center");
+  d3.select(".nodes").attr("class", "center").attr("title","Back");
   const centerNode = d3.select(".center .node");
+  const centerBBox = getCoords(".center .node");
+  const svgBBbox = svg.node().getBBox();
 
   if (isHorizontal) {
 
-  } else[
-    //centerNode.transition().duration(500).attr("transform",)
-  ]
+  } else {
+    const adjustCenter = {// from relative coords to absolute coords
+      x: svgBBbox.x + (svgBBbox.width / 2) + center.x,
+      y: center.y + (svgBBbox.height /2) + svgBBbox.y ,
+    };
+    const translate = {
+      dx: adjustCenter.x - centerBBox.x,
+      dy:adjustCenter.y - centerBBox.y,
+    }
+    centerNode.transition().duration(300).attr("transform","translate(" + translate.x +","+translate.y +")")
+    centerNode.transition().duration(800).attr("transform","translate(0,-50)")
+  }
 
 
   /*
@@ -523,16 +520,16 @@ const drawDetail = (data, cause) => {
   */
 
 
-
-  // draw the title
-  sleep(1500).then(() => {
-    // Do something after the sleep!
-    svg.append("g").attr("class", "title").append("text").attr("text-anchor", "middle").text("Accidents associated with " + cause)
-      .attr("x", 0)
-      .attr("y", -height / 2)
-      .transition().duration(1500).attr("transform", "translate(0," + height / 10 + ")");
-  });
-
+  /*
+    // draw the title
+    sleep(1500).then(() => {
+      // Do something after the sleep!
+      svg.append("g").attr("class", "title").append("text").attr("text-anchor", "middle").text("Accidents associated with " + cause)
+        .attr("x", 0)
+        .attr("y", -height / 2)
+        .transition().duration(1500).attr("transform", "translate(0," + height / 10 + ")");
+    });
+  */
 
   //let link = svg.insert("g", "g.nodes")
   let link = svg.append("g")
@@ -1406,7 +1403,7 @@ const changeLegend = (cause, isHorizontal) => {
   if (status.screen === "detail") {
     //d3.select("h1").transition().duration(500).attr("transform","scale(0.5)")
     d3.select("#sidebar h1").html("Canyon accidents due to " + cause)
-    d3.select("#sidebar h2").html("Case studies help canyoneers to avoid accidents in the future.")    
+    d3.select("#sidebar h2").html("Case studies help canyoneers to avoid accidents in the future.")
     d3.select("#legend-cause-size div:last-child").html("The number of canyon accidents (cause nodes only).");
     d3.select("#legend-correlation").style("display", "none");
     d3.select("#legend-injury-type div:first-child").html("Accidents");
@@ -1415,8 +1412,8 @@ const changeLegend = (cause, isHorizontal) => {
     d3.select("#legend-note").html("The accident nodes are color encoded as the severity level of the most serious injury in the correspending accident.");
     if (isHorizontal) {
 
-      const opacity= 0.5;
-      
+      const opacity = 0.5;
+
       // show controller
       controller.style("display", null);
       controller.transition().duration(duration).style("opacity", opacity);
@@ -1424,39 +1421,39 @@ const changeLegend = (cause, isHorizontal) => {
       d3.select("#legend").transition().duration(duration).style("opacity", 0);
       d3.select("h2").transition().duration(duration).style("opacity", 0);
       isShow = false;
-      controller.attr("title","Show Legend");
+      controller.attr("title", "Show Legend");
       controller.on("click", function () {
-        if (isShow) {   
+        if (isShow) {
           // then hide 
-          controller.attr("title","Hide Legend");
-          controller.select("img").attr("src","source/show.svg");          
-          d3.select("#legend").transition().duration(duration).style("opacity", 0);    
+          controller.attr("title", "Hide Legend");
+          controller.select("img").attr("src", "source/show.svg");
+          d3.select("#legend").transition().duration(duration).style("opacity", 0);
           d3.select("#sidebar").transition().duration(duration).style("background-color", null);
           d3.select("#sidebar").style("z-index", null);
           d3.select("h2").transition().duration(duration).style("opacity", 0);
           isShow = false;
         } else {
           // then show
-          controller.attr("title","Show Legend");
-          controller.select("img").attr("src","source/hide.svg");
+          controller.attr("title", "Show Legend");
+          controller.select("img").attr("src", "source/hide.svg");
           d3.select("#legend").transition().duration(duration).style("opacity", 1);
           d3.select("#sidebar").style("height", "100%");
-          d3.select("#sidebar").transition().duration(duration).style("background-color", "white");          
+          d3.select("#sidebar").transition().duration(duration).style("background-color", "white");
           d3.select("#sidebar").style("z-index", 800);
           d3.select("h2").transition().duration(duration).style("opacity", null);
           isShow = true;
         }
       })
-      controller.on("mouseenter", function(){
-        d3.select(this).style("opacity",1);
+      controller.on("mouseenter", function () {
+        d3.select(this).style("opacity", 1);
       })
-      controller.on("mouseleave", function(){
-        d3.select(this).style("opacity",opacity);
+      controller.on("mouseleave", function () {
+        d3.select(this).style("opacity", opacity);
       })
     }
   } else {
     d3.select("#sidebar h1").html("Canyon Accident Cause Analysis");
-    d3.select("#sidebar h2").html("Understand the causes and the correlations between each other.")    
+    d3.select("#sidebar h2").html("Understand the causes and the correlations between each other.")
     d3.select("#legend-cause-size div:last-child").html("The number of canyon accidents.");
     d3.select("#legend-injury-type div:first-child").html("Injury Type and its Severity Level");
     d3.select("#legend-correlation").style("display", null);
@@ -1468,7 +1465,7 @@ const changeLegend = (cause, isHorizontal) => {
     d3.select("#sidebar").style("z-index", null);
     d3.select("#sidebar").transition().duration(duration).style("background-color", null);
     d3.select("h2").transition().duration(duration).style("opacity", null);
-    controller.select("img").attr("src","source/show.svg");  
+    controller.select("img").attr("src", "source/show.svg");
   }
 }
 
