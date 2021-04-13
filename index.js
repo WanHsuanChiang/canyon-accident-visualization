@@ -10,7 +10,7 @@ const width = window.innerWidth;
 const height = window.innerHeight;
 const svg = d3.select("svg");
 const svgPosition = getCoords("svg");
-const isDebug = true;
+const isDebug = false;
 let ctx = {
 
   GRPAH: null,//cause,detail
@@ -224,7 +224,7 @@ function draw(data) {
     .force("link", d3.forceLink().id(d => d.id))
     .force("charge", d3.forceManyBody().strength(-400))
     .force("center", d3.forceCenter(width / 20, 0))
-    .force("collide", d3.forceCollide().strength(0.5).radius(function (d) { return radiusScale(d.value) + width / 64; })) // radius
+    .force("collide", d3.forceCollide().strength(0.5).radius(function (d) { return radiusScale(d.value) * 1.5; })) // radius
     //.force("collide", d3.forceCollide().strength(0.5).radius(80)) // radius
     //.force("x", d3.forceX().x(d => d.x))
     .force("x", d3.forceX(width / 2))
@@ -246,11 +246,18 @@ function draw(data) {
     .attr("stroke-width", function (d) { return Math.sqrt(d.value) * 3; });
 
 
-  var node = svg.append("g")
+  let node = svg.append("g")
     .attr("class", "nodes")
     .selectAll("g")
     .data(nodes)
-    .enter().append("g");
+    .enter().append("g")
+    .attr("title", function (d) { return d.id; })
+    .attr("class", "node cause")
+    .attr("type", function (d) {
+      let cause = d.id;
+      let type = (causeType[cause] === undefined) ? "Uncategorized" : causeType[cause];
+      return type;
+    });
 
 
 
@@ -258,28 +265,32 @@ function draw(data) {
     .attr("r", function (d) { return radiusScale(d.value) })
 
 
-  let labels = node.append("text")
-    .text(function (d) {
-      return d.id;
-    })
+  let labels = node.append("text").text(function (d) { return d.id })
     .attr("text-anchor", "middle")
     .attr("class", "cause-label")
     .attr('x', 0)
     .attr('y', function (d) { return radiusScale(d.value) / 16 })
     .style("font-size", function (d) { return radiusScale(d.value) / 4 + "px" });
+  /*
+    for(i = 0; i < network.nodes.length; i++){
+      if (d3.select('[title="'+ network.nodes[i].id +'"] circle').attr("r") > network.nodes[i].cause.length* (radiusScale(network.nodes[i].value) / 2)){
+        for (j = 0; j < network.nodes[i].causeArray.length; j++){
+          d3.select('[title="'+network.nodes[i].id+'"] text').append("tspan").text(function(d){return network.nodes[i].causeArray[j]})      
+        }
+      } else {
+        d3.select('[title="'+network.nodes[i].id+'"] text').text(function(d){return d.id})
+      }        
+    }
+    */
 
+  //d3.selectAll(".node tspan")
 
-  //node.append("title")
-  //  .text(function (d) { return d.id; })
+  //if (j = network.nodes[i].causeArray.length){
+  //  tspan.attr("dy", "1.2em").attr("dx", 0);
+  //}     
+  console.log(d3.select('[title="Rappel error"] circle').attr("r"))
 
-  node.attr("title", function (d) { return d.id; })
-    .attr("class", "node cause")
-    .attr("type", function (d) {
-      let cause = d.id;
-      let type = (causeType[cause] === undefined) ? "Uncategorized" : causeType[cause];
-      return type;
-    })
-    .attr("drag", false)
+  node.attr("drag", false)
     .call(d3.drag()
       .on("start", dragstarted)
       .on("drag", dragged)
@@ -478,7 +489,7 @@ const drawDetail = (data, cause) => {
   const injuryScale = d3.scaleLinear().domain([1, injuryLength]).range([-width / 4, width / 4]);
 
 
-  changeLegend();
+  changeLegend(cause, isHorizontal);
 
 
   // detail with center
@@ -624,7 +635,7 @@ const drawDetail = (data, cause) => {
   // force simulation
   let simulation;
   if (isHorizontal) {
-
+    // horizontal layout force simulation
     simulation = d3.forceSimulation()
       .force("link", d3.forceLink().id(d => d.id).strength(0))
       .force("charge", d3.forceManyBody().strength(-600))
@@ -638,6 +649,7 @@ const drawDetail = (data, cause) => {
       .force("y", d3.forceY(function (d) { return (isAccident(d)) ? -100 : height / 4; }).strength(4))
 
   } else {
+    // radial layout force simulation
     simulation = d3.forceSimulation()
       .force("link", d3.forceLink().id(d => d.id).strength(0))
       .force("charge", d3.forceManyBody().strength(-500))
@@ -1382,22 +1394,81 @@ const drawTooltip = (nodeData, data, cause) => {
 
 }
 
-const changeLegend = ()=>{
+const changeLegend = (cause, isHorizontal) => {
+
+  const duration = 1000;
+  const controller = d3.select("#controller");
+  let isShow = true;
+
+  d3.select("#legend").transition().duration(duration).style("opacity", null);
+  d3.select("h2").transition().duration(duration).style("opacity", null);
 
   if (status.screen === "detail") {
-    d3.select("#legend-cause-size div:last-child").html("The number of canyon accidents (cause nodes only).")
-    d3.select("#legend-correlation").style("display", "none")
-    d3.select("#legend-injury-type div:first-child").html("Accidents")
-    d3.select("#legend-injury-type .item").style("align-items", "center")
-    d3.selectAll("#legend-injury-type .item div:first-child").style("border-radius", "50px").style("width", "12px").style("height", "12px")
-    d3.select("#legend-note").html("The accident nodes are color encoded as the severity level of the most serious injury in the correspending accident.")
+    //d3.select("h1").transition().duration(500).attr("transform","scale(0.5)")
+    d3.select("#sidebar h1").html("Canyon accidents due to " + cause)
+    d3.select("#sidebar h2").html("Case studies help canyoneers to avoid accidents in the future.")    
+    d3.select("#legend-cause-size div:last-child").html("The number of canyon accidents (cause nodes only).");
+    d3.select("#legend-correlation").style("display", "none");
+    d3.select("#legend-injury-type div:first-child").html("Accidents");
+    d3.select("#legend-injury-type .item").style("align-items", "center");
+    d3.selectAll("#legend-injury-type .item div:first-child").style("border-radius", "50px").style("width", "12px").style("height", "12px");
+    d3.select("#legend-note").html("The accident nodes are color encoded as the severity level of the most serious injury in the correspending accident.");
+    if (isHorizontal) {
+
+      const opacity= 0.5;
+      
+      // show controller
+      controller.style("display", null);
+      controller.transition().duration(duration).style("opacity", opacity);
+      // hide some of the sidebar
+      d3.select("#legend").transition().duration(duration).style("opacity", 0);
+      d3.select("h2").transition().duration(duration).style("opacity", 0);
+      isShow = false;
+      controller.attr("title","Show Legend");
+      controller.on("click", function () {
+        if (isShow) {   
+          // then hide 
+          controller.attr("title","Hide Legend");
+          controller.select("img").attr("src","source/show.svg");          
+          d3.select("#legend").transition().duration(duration).style("opacity", 0);    
+          d3.select("#sidebar").transition().duration(duration).style("background-color", null);
+          d3.select("#sidebar").style("z-index", null);
+          d3.select("h2").transition().duration(duration).style("opacity", 0);
+          isShow = false;
+        } else {
+          // then show
+          controller.attr("title","Show Legend");
+          controller.select("img").attr("src","source/hide.svg");
+          d3.select("#legend").transition().duration(duration).style("opacity", 1);
+          d3.select("#sidebar").style("height", "100%");
+          d3.select("#sidebar").transition().duration(duration).style("background-color", "white");          
+          d3.select("#sidebar").style("z-index", 800);
+          d3.select("h2").transition().duration(duration).style("opacity", null);
+          isShow = true;
+        }
+      })
+      controller.on("mouseenter", function(){
+        d3.select(this).style("opacity",1);
+      })
+      controller.on("mouseleave", function(){
+        d3.select(this).style("opacity",opacity);
+      })
+    }
   } else {
-    d3.select("#legend-cause-size div:last-child").html("The number of canyon accidents.")
-    d3.select("#legend-injury-type div:first-child").html("Injury Type and its Severity Level")
-    d3.select("#legend-correlation").style("display", null)
-    d3.select("#legend-injury-type .item").style("align-items", null)
-    d3.selectAll("#legend-injury-type .item div:first-child").style("border-radius", null).style("width", null).style("height", null)
-    d3.select("#legend-note").html("")
+    d3.select("#sidebar h1").html("Canyon Accident Cause Analysis");
+    d3.select("#sidebar h2").html("Understand the causes and the correlations between each other.")    
+    d3.select("#legend-cause-size div:last-child").html("The number of canyon accidents.");
+    d3.select("#legend-injury-type div:first-child").html("Injury Type and its Severity Level");
+    d3.select("#legend-correlation").style("display", null);
+    d3.select("#legend-injury-type .item").style("align-items", null);
+    d3.selectAll("#legend-injury-type .item div:first-child").style("border-radius", null).style("width", null).style("height", null);
+    d3.select("#legend-note").html("");
+    controller.style("display", "none");
+    controller.style("opacity", 0);
+    d3.select("#sidebar").style("z-index", null);
+    d3.select("#sidebar").transition().duration(duration).style("background-color", null);
+    d3.select("h2").transition().duration(duration).style("opacity", null);
+    controller.select("img").attr("src","source/show.svg");  
   }
 }
 
@@ -1444,6 +1515,7 @@ const getNetworkData = (raw) => {
         network.nodes.push({
           "id": cause,
           "cause": cause,
+          "causeArray": cause.split(" "),
           "type": causeType[cause],
           "value": 1,
           "accidents": accident.split(),

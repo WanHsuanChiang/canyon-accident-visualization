@@ -16,6 +16,25 @@ html, body {
   z-index: 1000;
 }
 
+#controller {
+  width: 30px;
+  height: 30px;
+  border-radius: 30px;
+  -webkit-box-shadow: 5px 5px 10px black;
+          box-shadow: 5px 5px 10px black;
+  position: absolute;
+  bottom: 1em;
+  left: 1em;
+  z-index: 1000;
+  opacity: 0;
+  cursor: pointer;
+  padding: 5px;
+}
+
+#controller:hover {
+  opacity: 1;
+}
+
 #sidebar {
   opacity: 0.8;
   position: absolute;
@@ -31,6 +50,7 @@ html, body {
 
 #sidebar h1 {
   font-size: x-large;
+  text-transform: capitalize;
 }
 
 #sidebar h2 {

@@ -25,6 +25,24 @@ html , body {
     z-index: 1000;
 }
 
+#controller {
+    $index: 30px;
+    width: $index;
+    height: $index;
+    border-radius: $index;
+    box-shadow: 5px 5px 10px $default-color;
+    position: absolute;
+    bottom: 1em;
+    left: 1em;
+    z-index: 1000;
+    opacity: 0;
+    cursor: pointer;
+    padding: 5px;
+    &:hover{
+        opacity: 1;
+    }
+}
+
 
 #sidebar {
 
@@ -39,6 +57,7 @@ html , body {
     padding: 1em;
     h1 {
         font-size: x-large;
+        text-transform: capitalize;
     }
     h2 {
         font-size: large;
@@ -137,7 +156,7 @@ svg {
     
     @mixin default() {
         stroke: #fff;
-        stroke-width: 1.5px;        
+        stroke-width: 1.5px;
     }
     // https://www.carbondesignsystem.com/data-visualization/color-palettes/    
 
