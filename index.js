@@ -10,6 +10,7 @@ const width = window.innerWidth;
 const height = window.innerHeight;
 const svg = d3.select("svg");
 const svgPosition = getCoords("svg");
+const isDebug = true;
 let ctx = {
 
   GRPAH: null,//cause,detail
@@ -129,7 +130,7 @@ d3.csv(dataUrl).then(function (accidentData) {
 
   let filteredData;
   let detailedData;
-
+  drawSidebar();
   draw(accidentData);
   // TODO
   d3.select('#injury-option')
@@ -161,9 +162,20 @@ d3.csv(dataUrl).then(function (accidentData) {
     })
     */
 
-  drawFilter(injuryList);
+  //drawFilter(injuryList);
 
 });
+
+function drawSidebar() {
+  const sidebar = d3.select("#sidebar");
+  sidebar
+  .on("mouseenter",mouseenter)
+  //.on("mouseleave",mouseleave)
+
+  function mouseenter(){
+    console.log("fire")
+  }
+}
 
 
 // draw main network diagram
@@ -174,6 +186,8 @@ function draw(data) {
 
   let networkSet = getNetworkData(data);
   let network = networkSet.network;
+
+  const radiusScale = d3.scaleSqrt().domain([1, networkSet.maxValue]).range([height / 32, height / 8]);
 
   ctx.GRPAH = "cause";
   status.screen = "cause";
@@ -192,10 +206,11 @@ function draw(data) {
     .force("link", d3.forceLink().id(d => d.id))
     .force("charge", d3.forceManyBody().strength(-400))
     .force("center", d3.forceCenter(0, 0))
-    .force("collide", d3.forceCollide().strength(0.5).radius(function (d) { return Math.sqrt(d.value) * 15 + 20; })) // radius
+    .force("collide", d3.forceCollide().strength(0.5).radius(function (d) { return radiusScale(d.value) + width/64; })) // radius
     //.force("collide", d3.forceCollide().strength(0.5).radius(80)) // radius
-    .force("x", d3.forceX().x(d => d.x))
-    .force("y", d3.forceY(height / 2));
+    //.force("x", d3.forceX().x(d => d.x))
+    .force("x", d3.forceX(width / 2) )
+    .force("y", d3.forceY(height / 2).strength(0.3));
 
   /*
   .force("bounding-box", () => {
@@ -269,7 +284,7 @@ function draw(data) {
     .enter().append("g");
 
 
-  const radiusScale = d3.scaleSqrt().domain([1, networkSet.maxValue]).range([15, 100]);
+  
   let circles = node.append("circle")
     .attr("r", function (d) { return radiusScale(d.value) })
 
@@ -282,7 +297,7 @@ function draw(data) {
     .attr("class", "cause-label")
     .attr('x', 0)
     .attr('y', 0)
-    .style("font-size", function (d) { return Math.sqrt(d.value) * 4 + "px" });
+    .style("font-size", function (d) { return radiusScale(d.value) / 4 + "px" });
 
 
   //node.append("title")
@@ -467,23 +482,37 @@ const drawDetail = (data, cause) => {
   let networkSet = getAccidentNetworkData(data, cause);
   let network = networkSet.network;
 
+  console.log(networkSet)
+
   const links = network.links.map(d => Object.create(d));
   const nodes = network.nodes.map(d => Object.create(d));
   const radius = 12;
   const forceCenter = { x: width / 2, y: height / 4 };
-  const layout = getLayout(networkSet.causeNum, networkSet.accidentNum);
-  function getLayout(causeNum, accidentNum) {
-    if (causeNum >= 30 || accidentNum >= 30) {
-      return "horizontal"
-    } else { return "radial" }
+  // determine layout
+  const isHorizontal = (networkSet.causeNum >= 20 || networkSet.accidentNum >= 20) ? true : false;
+  function isAccident(d) {
+    if (d.category === "accident") { return true; }
+    else { false }
   }
+  const center = (isHorizontal) ? { x: 0, y: 0 } : { x: 0, y: 50 };
+  const injuryLength = Object.keys(injuryRating).length;
+  const injuryScale = d3.scaleLinear().domain([1, injuryLength]).range([-width / 4, width / 4]);
 
+  // determine layout (force simulation)  
+  
 
-  console.log(networkSet)
 
   // detail with center
   d3.select(".nodes").attr("class", "center");
-  const center = d3.select(".center .node");
+  const centerNode = d3.select(".center .node");
+
+  if(isHorizontal){
+
+  } else [
+    //centerNode.transition().duration(500).attr("transform",)
+  ]
+
+
   /*
   let centerNode = d3.select('[title = "' + cause + '"]').attr("class", d3.select('[title = "' + cause + '"]').attr("class") + " center-node")
     .call(d3.drag()
@@ -492,15 +521,18 @@ const drawDetail = (data, cause) => {
       .on("end", dragended));;
   svg.selectAll('*').remove();
   */
-
+/*
   const position = getCoords(".center");
   const transform = () => {
 
     dy = -(position.cy + position.height);
     return "translate(0," + dy + ")scale(3)"
   }
-  center.transition().duration(1500).attr("transform", transform)
+  centerNode.transition().duration(1500).attr("transform", transform)
   d3.select(".center text").remove();
+*/
+
+
 
   // draw the title
   sleep(1500).then(() => {
@@ -510,8 +542,6 @@ const drawDetail = (data, cause) => {
       .attr("y", -height / 2)
       .transition().duration(1500).attr("transform", "translate(0," + height / 10 + ")");
   });
-
-
 
 
   //let link = svg.insert("g", "g.nodes")
@@ -525,7 +555,7 @@ const drawDetail = (data, cause) => {
     .attr("target", function (d) { return d.target })
     .attr("stroke-width", 4);
 
-
+  // node
   let node = svg.append("g")
     .attr("class", "nodes")
     .selectAll("g")
@@ -535,24 +565,16 @@ const drawDetail = (data, cause) => {
     .attr("name", function (d) { return d.id })
     .attr("class", function (d) { return (d.id === "dummy") ? "node dummy" : "node"; });
 
-  /*
-  
-    let node = d3.select(".nodes").selectAll("g")
-    .attr("class","nodes")
-      .data(nodes)
-      .enter().append("g")
-      .attr("category", function (d) { return d.category })
-      .attr("name", function (d) { return d.id })
-      .attr("class", function (d) { return (d.id === "dummy") ? "node dummy" : "node"; });
-  */
   d3.selectAll('[category="accident"]').attr("injury-max", function (d) { return d.injuryMax });
   d3.selectAll('[category="cause"]').attr("type", function (d) { return getCauseType(d.id) });
 
-
-
+  // circle
+  const radiusScale = d3.scaleSqrt().domain([1, networkSet.accidentMax]).range([radius, radius * 2]);
   let circles = node.append("circle")
     .attr("r", function (d) {
-      return (d.id === "dummy") ? 1 : radius;
+      if (d.id === "dummy") { return 1 }
+      else if (!isAccident(d)) { return radiusScale(d.value) }
+      else { return radius }
     })
     .on("mouseenter", mouseenter)
     .on("mouseleave", mouseleave)
@@ -564,38 +586,65 @@ const drawDetail = (data, cause) => {
 
   d3.selectAll('[category="accident"] circle').style("fill", function (d) { return injuryColor(d.injuryMax) });
 
-  let labels = node.append("text")
-    .attr("text-anchor", "middle")
-    .attr("class", "label")
-    .attr('y', function (d) {
-      if (layout === "horizontal") { return (d.category === "accident") ? -radius - 60 : radius + 10; }
-      else { return 0 }
-    })
-    .attr('x', 0)
-    .attr("transform", function (d) {
-      if (layout === "horizontal") {
-        return "rotate(-45 0,0) translate(50,60)"
-      }
-    });
+  // label
+  let labels = node.append("text").attr("class", "label")
 
   d3.selectAll('[category="cause"] text').text(function (d) { return d.id; });
   d3.selectAll('[category="accident"] text').style("fill", function (d) { return injuryColor(d.injuryMax) })
   d3.selectAll('[category="accident"] text').append("tspan").text(function (d) { return d.canyon });
-  d3.selectAll('[category="accident"] text').append("tspan").text(function (d) { return d.date }).attr("dy", "1.2em").attr("x", 0);
+  d3.selectAll('[category="accident"] text').append("tspan").text(function (d) { return d.date }).attr("dy", "1.2em").attr("x", "2em");
 
+  labels
+    .attr("text-anchor", function (d) { return getLabelPosition(d).textAnchor })
+    .attr('y', function (d) { return getLabelPosition(d).y })
+    .attr('x', function (d) { return getLabelPosition(d).x })
+    .attr("transform", function (d) { return getLabelPosition(d).transform })
+  function getLabelPosition(d) {
+    let textAnchor;
+    let x;
+    let y;
+    let transform;
+    if (isHorizontal) {
+      // for horizontal layout
+      if (isAccident(d)) {
+        // if node is accident
+        textAnchor = "start";
+        x = 10;
+        y = -radius * 2;
+        transform = "rotate(-45 0,0)";
+      } else {
+        // if node is cause
+        textAnchor = "end";
+        x = -10;
+        y = radius * 2;
+        transform = "rotate(-45 0,0)";
+      }
+    } else {
+      // for radial layout
+      if (injuryScale(injuryScale(d.injuryValue)) > 0) {
+        textAnchor = "start"
+        x = (isAccident(d))? radius: radiusScale(d.value);
+        y = 0;
+        transform = null;
+      } else {
+        textAnchor = "end"
+        x = (isAccident(d))? -radius: -radiusScale(d.value);
+        y = 0;
+        transform = null;
+      }
 
-
-
-  // determine layout (force simulation)
-
-  function isAccident(d) {
-    if (d.category === "accident") { return true; }
-    else { false }
+    }
+    return {
+      textAnchor: textAnchor,
+      x:x,
+      y:y,
+      transform: transform,
+    }
   }
-  const injuryLength = Object.keys(injuryRating).length;
-  const injuryScale = d3.scaleLinear().domain([1, injuryLength]).range([-width / 4, width / 4]);
+
+
   let simulation;
-  if (layout === "horizontal") {
+  if (isHorizontal) {
 
     simulation = d3.forceSimulation()
       .force("link", d3.forceLink().id(d => d.id).strength(0))
@@ -607,31 +656,29 @@ const drawDetail = (data, cause) => {
         if (isAccident(d)) { return injuryScale(d.injuryValue) }
         else { return injuryScale(d.injuryValue) }
       }).strength(0.3))
-      .force("y", d3.forceY(function (d) { return (isAccident(d)) ? -100 : height / 4; }).strength(5))
+      .force("y", d3.forceY(function (d) { return (isAccident(d)) ? -100 : height / 4; }).strength(4))
 
   } else {
     simulation = d3.forceSimulation()
       .force("link", d3.forceLink().id(d => d.id).strength(0))
       .force("charge", d3.forceManyBody().strength(-500))
-      .force("center", d3.forceCenter(0, 0))
+      .force("center", d3.forceCenter(center.x, center.y))
       .force("collide", d3.forceCollide().strength(1).radius(function (d) { return (d.id === "dummy") ? 1 : 20 }))
       .force("r", d3.forceRadial(function (d) {
         let val;
-        if (d.id === cause) {
-          val = 0;
-        } else {
-          val = (isAccident(d)) ? 100 : 300
-        }
+        if (d.id === cause) { val = 0; }
+        else { val = (isAccident(d)) ? 100 : 250 }
         return val;
-      }, 0, -100).strength(2))
-      .force("x", d3.forceX())
+      }, center.x, -center.y).strength(3))
+      //.force("x", d3.forceX())
+      .force("x", d3.forceX(function (d) {
+        if (isAccident(d)) { return injuryScale(d.injuryValue) }
+        else { return injuryScale(d.injuryValue) }
+      }))
       .force("y", d3.forceY(function (d) {
         return (isAccident(d)) ? 500 : 300;
       }));
   }
-
-
-
 
   simulation
     .nodes(nodes)
@@ -649,7 +696,7 @@ const drawDetail = (data, cause) => {
       .attr("y2", function (d) { return d.target.y; });
 
 
-    if (layout === "horizontal") {
+    if (isHorizontal) {
       node
         .attr("transform", function (d) {
           //console.log(d.injuryValue)
@@ -816,127 +863,212 @@ const drawDetail = (data, cause) => {
       tooltipTitle.append("h4").html(nodeData.canyon + ' (' + nodeData.date + ')');
       //tooltipTitle.append("span").attr("class", "date").html(nodeData.date);
 
-
-      // start injury chart
-
-      const space = 2;
-      let injurySvg = tooltip.append("div")
-        .attr("class", "injury-chart")
-        .style("height", function () { return (indvInjuries.length > 1) ? "100px" : "60px" })
-        .append("svg")
-        .attr("viewBox", function () { return (indvInjuries.length > 1) ? "0 0 200 100" : "0 0 200 60" });
-      //.attr("preserveAspectRatio", "xMidYMid meet");
-
+      // cuase list
+      /*
+     let ul = tooltip.append("div").attr("class","cause-list")     
+     .append("ul").selectAll("li")
+     .data(nodeData.detailCause)
+     .enter().append("li")
+     .attr("type", function(d){return getCauseType(d) })
+     .html(function(d){return d})
+    */
 
 
+      drawCause();
+      function drawCauseList() {
 
-      let injuryBar = injurySvg.selectAll("g").attr("class", "injury-bars")
-        .data(injuryList)
-        .enter().append("g")
-        .attr("fill", function (d) { return injuryColor(d.name) })
-        .attr("name", function (d) { return d.name })
-        .attr("value", function (d) { return d.value });
+        const radius = 4;
+        const offset = 12;
+        const list = nodeData.detailCause;
 
-      injuryBar.append("rect")
-        .attr("width", (1 / injuryList.length * 100) + "%")
-        .attr("height", "5px")
-        .attr("y", function () { return (indvInjuries.length > 1) ? 20 : 10; })
-        .attr("x", function (d) { return (d.value / injuryList.length) * 100 + "%" })
-
-      const chartBBox = injurySvg.node().getBBox();
-
-      for (i = 0; i < indvInjuries.length; i++) {
-
-        let bar = d3.select('.injury-chart [name="' + indvInjuries[i].name + '"]');// find the injury rectangle
-        let bbox = bar.node().getBBox();// find the rect position
-        let text;
-        let textBBox;
-        let textX = bbox.x + bbox.width / 2;
-        let textY;
-        let triangle;
-
-        if (i & 1) {
-          // if i is odd
-
-          // draw text first
-          text = bar.insert("text");
-          text.text(indvInjuries[i].name).attr("text-anchor", "middle")
-          textBBox = text.node().getBBox(); // only want to know width & height
-          // then draw triangle
-          triangle = bar.insert("path", '[name="' + indvInjuries[i].name + '"] rect').attr("d", path(bbox, "top"));
-          let pathBBox = triangle.node().getBBox();
-          textY = pathBBox.y - textBBox.height - space +6;
-
-        } else {
-          // if i is even
-
-          // draw triangle first
-          triangle = bar.append("path").attr("d", path(bbox, "bottom"));
-          let pathBBox = triangle.node().getBBox();
-          // then draw text
-          text = bar.append("text")
-          text.text(indvInjuries[i].name).attr("text-anchor", "middle")
-          textBBox = text.node().getBBox(); // only want to know width & height
-          console.log(pathBBox)
-          textY =  pathBBox.y + pathBBox.height + space + 6;
-          /*
+        let causeSvg = tooltip.append("div")
+          .attr("class", "cause-chart")
+          .style("height", "40px")
+          .append("svg")
+          .attr("viewBox", "0 0 200 40");
 
 
-          prevText = { x: textX, width: bbox.width };
-          
-          if (i > 0) {
+        for (i = 0; i < list.length; i++) {
 
-            let prevText = d3.select('.injury-chart [name="' + indvInjuries[i - 1].name + '"]').node().getBBox();
-            if (prevText.x + prevText.width > textX) {
-              textY = textY + textBBox.height;
+          let causeBullet = causeSvg.append("g").attr("class", "cause-item")
+            .attr("name", list[i])
+            .attr("type", function () { return getCauseType(list[i]) });
+
+          let circle = causeBullet.append("circle").attr("r", radius)
+          //let text = causeBullet.append("text").text(list[i])
+
+          const svgBBox = causeSvg.node().getBBox();
+          const circleBBox = circle.node().getBBox();
+          //const textBBox = text.node().getBBox();
+
+          const circleXY = getXY();
+          function getXY() {
+            let x = svgBBox.x;
+            let y = Math.abs(svgBBox.y - circleBBox.y);
+
+            return { x: x, y: 100 }
+          }
+
+
+
+          circle.attr("x", 50).attr("y", 100)
+          //text.attr("x", circleXY.x).attr("y",circleXY.y)
+          console.log(svgBBox)
+          console.log(circleBBox)
+          //console.log(textBBox)
+          console.log(causeBullet.node().getBBox())
+
+
+        }
+        /*
+        let causeBullet = causeSvg.selectAll("g").attr("class", "cause-item")
+          .data(nodeData.detailCause)
+          .enter().append("g")
+
+          .attr("name", function (d) { return d })
+          .attr("type", function (d) { return getCauseType(d) });
+
+        let circle = causeBullet.append("circle").attr("r", radius)
+
+        let text = causeBullet.append("text").text(function(d){return d})
+
+        const svgBBox = causeSvg.node().getBBox();
+
+        let cx = 
+        
+        */
+
+      }
+
+      function drawCause() {
+        const radius = 4;
+        const list = nodeData.detailCause;
+
+        let causeDiv = tooltip.append("div").attr("class", "cause-chart");
+
+        for (i = 0; i < list.length; i++) {
+          //let causeItem = causeDiv.append("div").append("ul");
+          //let causeSvg = causeItem.append("svg").attr("viewBox", "0 0 200 40");
+          let text = causeDiv.append("div").attr("type", getCauseType(list[i])).html(list[i])
+
+          //causeSvg.append("circle").attr("r", radius);
+        }
+      }
+
+
+      // Draw Injury Chart
+      drawInjuryChart();
+      function drawInjuryChart() {
+        const space = 2;
+        let injurySvg = tooltip.append("div")
+          .attr("class", "injury-chart")
+          .style("height", function () { return (indvInjuries.length > 1) ? "100px" : "60px" })
+          .append("svg")
+          .attr("viewBox", function () { return (indvInjuries.length > 1) ? "0 0 200 100" : "0 0 200 60" });
+        //.attr("preserveAspectRatio", "xMidYMid meet");
+
+
+
+
+        let injuryBar = injurySvg.selectAll("g").attr("class", "injury-bars")
+          .data(injuryList)
+          .enter().append("g")
+          .attr("fill", function (d) { return injuryColor(d.name) })
+          .attr("name", function (d) { return d.name })
+          .attr("value", function (d) { return d.value });
+
+        injuryBar.append("rect")
+          .attr("width", (1 / injuryList.length * 100) + "%")
+          .attr("height", "5px")
+          .attr("y", function () { return (indvInjuries.length > 1) ? 20 : 10; })
+          .attr("x", function (d) { return (d.value / injuryList.length) * 100 + "%" })
+
+        const chartBBox = injurySvg.node().getBBox();
+
+        for (i = 0; i < indvInjuries.length; i++) {
+
+          let bar = d3.select('.injury-chart [name="' + indvInjuries[i].name + '"]');// find the injury rectangle
+          let bbox = bar.node().getBBox();// find the rect position
+          let text;
+          let textBBox;
+          let textX = bbox.x + bbox.width / 2;
+          let textY;
+          let triangle;
+
+          if (i & 1) {
+            // if i is odd
+
+            // draw text first
+            text = bar.insert("text");
+            text.text(indvInjuries[i].name).attr("text-anchor", "middle")
+            textBBox = text.node().getBBox(); // only want to know width & height
+            // then draw triangle
+            triangle = bar.insert("path", '[name="' + indvInjuries[i].name + '"] rect').attr("d", path(bbox, "top"));
+            let pathBBox = triangle.node().getBBox();
+            textY = pathBBox.y - textBBox.height - space + 6;
+
+          } else {
+            // if i is even
+
+            // draw triangle first
+            triangle = bar.append("path").attr("d", path(bbox, "bottom"));
+            let pathBBox = triangle.node().getBBox();
+            // then draw text
+            text = bar.append("text")
+            text.text(indvInjuries[i].name).attr("text-anchor", "middle")
+            textBBox = text.node().getBBox(); // only want to know width & height
+            textY = pathBBox.y + pathBBox.height + space + 6;
+            /*
+  
+  
+            prevText = { x: textX, width: bbox.width };
+            
+            if (i > 0) {
+  
+              let prevText = d3.select('.injury-chart [name="' + indvInjuries[i - 1].name + '"]').node().getBBox();
+              if (prevText.x + prevText.width > textX) {
+                textY = textY + textBBox.height;
+              }
+  
             }
+            */
 
           }
-          */
+
+
+          if (textX + textBBox.width > chartBBox.width) {
+            textX = chartBBox.width - textBBox.width / 2
+          } else if (textX < 0) {
+            textX = textBBox.width / 2 + 10;
+          }
+          text.attr("x", textX).attr("y", textY)
 
         }
 
 
-        if (textX + textBBox.width > chartBBox.width) {
-          textX = chartBBox.width - textBBox.width / 2
-        } else if (textX < 0) {
-          textX = textBBox.width / 2 + 10;
+        // draw equilateral triangle
+        function path(bbox, position) {
+
+          const length = 4;
+          //const barCoords = getCoords('.injury-chart [name="'+ injury +'"] rect');          
+          const start = {
+            x: bbox.x + bbox.width / 2,
+            y: (position === "bottom") ? bbox.y + bbox.height + space : bbox.y - space,
+          }
+          const left = {
+            x: start.x - length / 2,
+            y: (position === "bottom") ? start.y + Math.sqrt(3) * (length / 2) : start.y - Math.sqrt(3) * (length / 2)
+          }
+          const right = {
+            x: start.x + length / 2,
+            y: left.y,
+          }
+
+          return "M" + start.x + " " + start.y + " L" + left.x + " " + left.y + " L" + right.x + " " + right.y + "Z";
         }
-        text.attr("x", textX).attr("y", textY)
+
 
       }
-
-
-      // draw equilateral triangle
-      function path(bbox, position) {
-
-        const length = 4;
-        //const barCoords = getCoords('.injury-chart [name="'+ injury +'"] rect');          
-        const start = {
-          x: bbox.x + bbox.width / 2,
-          y: (position === "bottom") ? bbox.y + bbox.height + space : bbox.y - space,
-        }
-        const left = {
-          x: start.x - length / 2,
-          y: (position === "bottom") ? start.y + Math.sqrt(3) * (length / 2) : start.y - Math.sqrt(3) * (length / 2)
-        }
-        const right = {
-          x: start.x + length / 2,
-          y: left.y,
-        }
-
-        return "M" + start.x + " " + start.y + " L" + left.x + " " + left.y + " L" + right.x + " " + right.y + "Z";
-      }
-
-
-
-
-
-
-
-
-
-
 
 
       let tooltipList = tooltip.append("div").attr("class", "tooltip-list");
@@ -1055,7 +1187,7 @@ const drawDetail = (data, cause) => {
         })
         .on("mouseleave", function () {
           detailStatus.isTooltipHover = false;
-          d3.select(this).remove();
+          if (!isDebug) { d3.select(this).remove(); }
           detailStatus.isTooltip = false;
           removeHighlight();
         })
@@ -1358,6 +1490,7 @@ const getAccidentNetworkData = (data, cause) => {
 
   let accidentNodes = [];
   let causeNodes = [];
+  let accidentMax = 1;
   /*
     // for center cause node
     causeNodes.push({
@@ -1410,7 +1543,7 @@ const getAccidentNetworkData = (data, cause) => {
             "id": detailCauses[i],
             "name": detailCauses[i],
             "category": "cause",
-            "value": 1,
+            "value": 1, // how many accident
             "accidents": d.id.split(),
             "injuryValue": injuryRating[d.injuryMax],
           });
@@ -1418,8 +1551,10 @@ const getAccidentNetworkData = (data, cause) => {
           // if the node is exist
           // count the average injury value (the weight of the cause node)
           causeNodes[nodeIndex].injuryValue = ((causeNodes[nodeIndex].injuryValue * causeNodes[nodeIndex].value) + injuryRating[d.injuryMax]) / (causeNodes[nodeIndex].value + 1)
-          // count how many accident
+          // count how many accident, determine the max
           causeNodes[nodeIndex].value = causeNodes[nodeIndex].value + 1;
+          if (causeNodes[nodeIndex].value > accidentMax) { accidentMax = causeNodes[nodeIndex].value }
+          // push accident
           causeNodes[nodeIndex].accidents.push(d.id);
         }
 
@@ -1470,7 +1605,7 @@ const getAccidentNetworkData = (data, cause) => {
   //array_move(network.nodes, causeIndex, 0); // array_move(arr, old_index, new_index)
   //network.nodes.splice(causeIndex, 1); // remove the selected cause node
 
-  return { network: network, accidentNum: accidentNodes.length, causeNum: causeNodes.length };
+  return { network: network, accidentNum: accidentNodes.length, causeNum: causeNodes.length, accidentMax: accidentMax };
 }
 
 const getTreeData = (data, cause) => {
