@@ -28,21 +28,28 @@ html , body {
 
 #sidebar {
 
-    opacity: 0.2;
-    &[highlighted = true]{
-        opacity: 1;
+    opacity: 0.8;
+    &[highlighted = false]{
+        opacity: 0.2;
     }
     position: absolute;
     left:0;
     top:0;
-    width: 30%;
-    height: 100%;    
+    width: 25%;  
     padding: 1em;
     h1 {
         font-size: x-large;
     }
     h2 {
         font-size: large;
+    }
+
+    #legend-note {
+        margin-top: 3em;
+        &::before {
+            content: "* ";
+        }
+        color: lighten($color: $default-color, $amount: 70)
     }
     
 }
@@ -64,7 +71,6 @@ svg {
     text-align: right;
     padding: 1em;
     opacity: 0.2;
-    color: lighten($color: $default-color, $amount: 0.5);
     a {
         text-decoration: none;
         color: $default-color;
@@ -186,10 +192,25 @@ $tooltip-padding: 2em;
 
     &.main-cause-tooltip {
         width: $main-tooltip-width;
+        opacity: 0.9;
+        &[highlighted=false] {
+            opacity: 0.3;
+        }
+        &[highlighted=true] {
+            opacity: 0.9;
+        }        
     }
 
     &.accident-tooltip {
         width: $accident-tooltip-width;
+        // opacity change
+        opacity: 0.7;
+        &[highlighted=false] {
+            opacity: 0.3;
+        }
+        &[highlighted=true] {
+            opacity: 0.9;
+        }
     }
     
     background-color: $bg-color;
@@ -199,13 +220,6 @@ $tooltip-padding: 2em;
     padding: $tooltip-padding;
     position: absolute;    
     animation: pulse 10s infinite;
-    &[show=true]{
-        z-index: 1000;
-    }
-    &[show=false]{
-        display: none;
-        opacity:0;
-    }
     &[type = "Human error"] {
         border-color: $human-color;
         .cause-type {
@@ -224,15 +238,7 @@ $tooltip-padding: 2em;
             color: $uncategorized-color; 
         }
     }
-
-    // opacity change
-    opacity: 0.7;
-    &[highlighted=false] {
-        opacity: 0.3;
-    }
-    &[highlighted=true] {
-        opacity: 0.9;
-    }
+    
 }
 
 
@@ -256,9 +262,7 @@ $tooltip-padding: 2em;
         }  
         
     }
-    li {
-        //float: left;
-    }
+
 }
 
 .tooltip-title {
@@ -574,3 +578,103 @@ $injury-color-min: #fff5f0;
     fill: $bg-color;
     font-size: 20px;
 }
+
+
+
+
+#legend { 
+
+    $space: 5px;
+
+    font-size: small;
+
+    .legend-item {
+        margin: 0 0 0.5em 0;      
+    }
+
+    .vertical-title {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        &>div:first-child{
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            font-size: 5px;
+            padding-right: 0.5em;
+        }
+    }
+
+    #legend-cause-type .list {
+
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        //justify-content: space-between;
+
+
+        [type = "Human error"]::before{
+            color: $human-color;
+        }
+        [type = "Natural environment"]::before{
+            color: $natural-color;
+        }
+        [type = "Uncategorized"]::before{
+            color: $uncategorized-color;
+        }
+        div {
+            padding-right: 1em;
+        }
+        div::before{
+            content: " ● ";
+            font-size: x-large;
+            vertical-align: sub;
+            margin: 0;
+            line-height: 0;
+            padding: 0;
+        }
+    }
+    .two-column {
+        display: flex;
+        flex-direction: row;
+        align-items: center; 
+        div:first-child{
+            width: 10%;
+            margin-right: 1em;
+        }
+        div:last-child{
+            width: 90%;
+        }
+    }
+    #legend-cause-size {        
+        span:first-child{
+            font-size: xx-large;
+            vertical-align: sub;
+        }
+        span:last-child {
+            font-size: large;
+        }
+    }
+    #legend-correlation {
+        div:first-child {
+            height: 0.7em;
+            border-top: 5px solid $default-color;
+            border-bottom: 2px solid $default-color;
+        }
+        
+    }
+    #legend-injury-type .list {
+        .item {
+            display: flex;
+            flex-direction: row;            
+            div:first-child {
+                width: 1em;
+                margin-right: 1em;
+            }
+        }
+        
+
+    }
+}
+
+    
+    

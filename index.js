@@ -123,7 +123,6 @@ const injuryColor = function (value) {
 // setup
 
 
-
 // https://stackoverflow.com/a/54466624
 
 d3.csv(dataUrl).then(function (accidentData) {
@@ -132,6 +131,7 @@ d3.csv(dataUrl).then(function (accidentData) {
   let detailedData;
   drawSidebar();
   draw(accidentData);
+
   // TODO
   d3.select('#injury-option')
     .on('change', function () {
@@ -167,14 +167,32 @@ d3.csv(dataUrl).then(function (accidentData) {
 });
 
 function drawSidebar() {
-  const sidebar = d3.select("#sidebar");
-  sidebar
-  .on("mouseenter",mouseenter)
-  //.on("mouseleave",mouseleave)
 
-  function mouseenter(){
+  const sidebar = d3.select("#sidebar")
+  const sidebarBBox = getCoords("#sidebar");
+
+  const list = injuryList.sort(function (a, b) { return -a.value - -b.value });
+
+  const item = d3.select("#legend-injury-type .list").selectAll("div")
+    .data(list)
+    .enter().append("div")
+    .attr("name", function (d) { return d.name })
+    .attr("class", "item")
+
+  item.append("div").style("background-color", function (d) { return injuryColor(d.name) })
+  item.append("div").html(function (d) { return d.name })
+
+
+  //d3.select("html").on("mouseover",mouseover)
+
+  function mouseover() {
     console.log("fire")
   }
+
+
+
+
+
 }
 
 
@@ -199,68 +217,18 @@ function draw(data) {
 
   svg.attr("viewBox", [-width / 2, -height / 2, width, height]);
 
-
+  changeLegend();
 
 
   const simulation = d3.forceSimulation()
     .force("link", d3.forceLink().id(d => d.id))
     .force("charge", d3.forceManyBody().strength(-400))
-    .force("center", d3.forceCenter(0, 0))
-    .force("collide", d3.forceCollide().strength(0.5).radius(function (d) { return radiusScale(d.value) + width/64; })) // radius
+    .force("center", d3.forceCenter(width / 20, 0))
+    .force("collide", d3.forceCollide().strength(0.5).radius(function (d) { return radiusScale(d.value) + width / 64; })) // radius
     //.force("collide", d3.forceCollide().strength(0.5).radius(80)) // radius
     //.force("x", d3.forceX().x(d => d.x))
-    .force("x", d3.forceX(width / 2) )
+    .force("x", d3.forceX(width / 2))
     .force("y", d3.forceY(height / 2).strength(0.3));
-
-  /*
-  .force("bounding-box", () => {
-
-    nodes.forEach(node => {
-      if (isOutside(node).boolean) {
-        let offset = 4;
-        if (isOutside(node).position.horizontal === "left") {
-          node.x = node.x + offset;
-        } else if (isOutside(node).position.horizontal === "right") {
-          node.x = node.x - offset;
-        } else {
-          node.x = node.x;
-        }
-        if (isOutside(node).position.vertical === "top") {
-          node.y = node.y + offset;
-        } else if (isOutside(node).position.vertical === "bottom") {
-          node.y = node.y - offset;
-        } else {
-          node.y = node.y;
-        }
-      }
-    })
-
-
-  });
-*/
-  //.force("box_force",box_force());
-  /*
-  .force("bouding-box", () => {
-    let nodes = d3.selectAll(".node")._groups[0];
-    for(i = 0; i<nodes.length; i++ ){
-      if (isOutside(nodes[i])){
-        d3.select(nodes[i]).x = 0;
-        d3.select(nodes[i]).y = 0
-      };
-    };
-  });
-  */
-  /*
-    //custom force to put stuff in a box 
-    function box_force() {
-      for (var i = 0, n = data.nodes.length; i < n; ++i) {
-        let curr_node = data.nodes[i];
-        curr_node.x = Math.max(function (d) { return Math.sqrt(d.value) * 15 }, Math.min(width - function (d) { return Math.sqrt(d.value) * 15 }, curr_node.x));
-        curr_node.y = Math.max(function (d) { return Math.sqrt(d.value) * 15 }, Math.min(height - function (d) { return Math.sqrt(d.value) * 15 }, curr_node.y));
-      }
-    }
-  */
-
   const links = network.links.map(d => Object.create(d));
   const nodes = network.nodes.map(d => Object.create(d));
   //const links = data.links;
@@ -271,11 +239,12 @@ function draw(data) {
     .attr("class", "links")
     .selectAll("line")
     .data(links)
-    .enter().append("line")
+    .enter().append("g").append("line")
     .attr("class", "link")
     .attr("source", function (d) { return d.source })
     .attr("target", function (d) { return d.target })
     .attr("stroke-width", function (d) { return Math.sqrt(d.value) * 3; });
+
 
   var node = svg.append("g")
     .attr("class", "nodes")
@@ -284,19 +253,19 @@ function draw(data) {
     .enter().append("g");
 
 
-  
+
   let circles = node.append("circle")
     .attr("r", function (d) { return radiusScale(d.value) })
 
 
-  let lables = node.append("text")
+  let labels = node.append("text")
     .text(function (d) {
       return d.id;
     })
     .attr("text-anchor", "middle")
     .attr("class", "cause-label")
     .attr('x', 0)
-    .attr('y', 0)
+    .attr('y', function (d) { return radiusScale(d.value) / 16 })
     .style("font-size", function (d) { return radiusScale(d.value) / 4 + "px" });
 
 
@@ -354,6 +323,9 @@ function draw(data) {
     d.fx = event.x;
     d.fy = event.y;
     d3.select('.tooltip').attr("highlighted", false);
+    // not highlight sidebar
+    d3.select("#sidebar")
+      .attr("highlighted", false)
   }
 
   function dragged(event, d) {
@@ -373,6 +345,9 @@ function draw(data) {
     if (status.isTooltip) {
       d3.select(".tooltip").remove();
     }
+    // highlight sidebar
+    d3.select("#sidebar")
+      .attr("highlighted", null)
   }
 
   // mouseover and mouseout
@@ -399,12 +374,12 @@ function draw(data) {
       d3.selectAll(".link").attr("highlighted", false);
       d3.selectAll('[source="' + cause + '"]').attr("highlighted", true);
       d3.selectAll('[target="' + cause + '"]').attr("highlighted", true);
-      /*
-            // tooltip
-            d3.select('.tooltip[cause="' + cause + '"]').attr("show", true)
-              .style("top", event.pageY + "px")
-              .style("left", event.pageX + "px")
-              */
+
+      // not highlight sidebar
+      d3.select("#sidebar")
+        .attr("highlighted", false)
+
+
 
       drawTooltip(network.nodes[d.index], data, cause);
 
@@ -420,6 +395,10 @@ function draw(data) {
       d3.selectAll(".link").attr("highlighted", null);
       d3.select('.tooltip').remove();
       status.isTooltip = false;
+
+      // highlight sidebar
+      d3.select("#sidebar")
+        .attr("highlighted", null)
     }
 
   }
@@ -498,17 +477,17 @@ const drawDetail = (data, cause) => {
   const injuryLength = Object.keys(injuryRating).length;
   const injuryScale = d3.scaleLinear().domain([1, injuryLength]).range([-width / 4, width / 4]);
 
-  // determine layout (force simulation)  
-  
+
+  changeLegend();
 
 
   // detail with center
   d3.select(".nodes").attr("class", "center");
   const centerNode = d3.select(".center .node");
 
-  if(isHorizontal){
+  if (isHorizontal) {
 
-  } else [
+  } else[
     //centerNode.transition().duration(500).attr("transform",)
   ]
 
@@ -521,16 +500,16 @@ const drawDetail = (data, cause) => {
       .on("end", dragended));;
   svg.selectAll('*').remove();
   */
-/*
-  const position = getCoords(".center");
-  const transform = () => {
-
-    dy = -(position.cy + position.height);
-    return "translate(0," + dy + ")scale(3)"
-  }
-  centerNode.transition().duration(1500).attr("transform", transform)
-  d3.select(".center text").remove();
-*/
+  /*
+    const position = getCoords(".center");
+    const transform = () => {
+  
+      dy = -(position.cy + position.height);
+      return "translate(0," + dy + ")scale(3)"
+    }
+    centerNode.transition().duration(1500).attr("transform", transform)
+    d3.select(".center text").remove();
+  */
 
 
 
@@ -623,12 +602,12 @@ const drawDetail = (data, cause) => {
       // for radial layout
       if (injuryScale(injuryScale(d.injuryValue)) > 0) {
         textAnchor = "start"
-        x = (isAccident(d))? radius: radiusScale(d.value);
+        x = (isAccident(d)) ? radius : radiusScale(d.value);
         y = 0;
         transform = null;
       } else {
         textAnchor = "end"
-        x = (isAccident(d))? -radius: -radiusScale(d.value);
+        x = (isAccident(d)) ? -radius : -radiusScale(d.value);
         y = 0;
         transform = null;
       }
@@ -636,13 +615,13 @@ const drawDetail = (data, cause) => {
     }
     return {
       textAnchor: textAnchor,
-      x:x,
-      y:y,
+      x: x,
+      y: y,
       transform: transform,
     }
   }
 
-
+  // force simulation
   let simulation;
   if (isHorizontal) {
 
@@ -737,6 +716,10 @@ const drawDetail = (data, cause) => {
     d.fx = event.x;
     d.fy = event.y;
     if (detailStatus.isTooltip) { d3.select(".tooltip").attr("highlighted", false); }
+    // not highlight sidebar
+    d3.select("#sidebar")
+      .attr("highlighted", false)
+
 
   }
 
@@ -754,6 +737,10 @@ const drawDetail = (data, cause) => {
     d3.selectAll(".node").attr("highlighted", null);
     d3.selectAll(".link").attr("highlighted", null);
     if (detailStatus.isTooltip) { d3.select(".tooltip").remove(); }
+    // highlight sidebar
+    d3.select("#sidebar")
+      .attr("highlighted", null)
+
   }
 
 
@@ -794,6 +781,10 @@ const drawDetail = (data, cause) => {
     if (!detailStatus.isDragging && !detailStatus.isTooltipHover) {
 
       detailStatus.currentNode = null;
+
+      // highlight sidebar
+      d3.select("#sidebar")
+        .attr("highlighted", null)
 
       d3.selectAll(".node").attr("highlighted", null);
       d3.selectAll(".link").attr("highlighted", null);
@@ -1232,11 +1223,19 @@ const highlight = (nodeData, data) => {
   d3.selectAll('[source="' + nodeData.id + '"]').attr("highlighted", true);
   d3.selectAll('[target="' + nodeData.id + '"]').attr("highlighted", true);
 
+  // not highlight sidebar
+  d3.select("#sidebar")
+    .attr("highlighted", false)
+
 }
 
 const removeHighlight = () => {
   d3.selectAll('.node').attr('highlighted', null);
   d3.selectAll('.link').attr('highlighted', null);
+
+  // highlight sidebar
+  d3.select("#sidebar")
+    .attr("highlighted", null)
 }
 
 const drawFilter = (array) => {
@@ -1383,7 +1382,24 @@ const drawTooltip = (nodeData, data, cause) => {
 
 }
 
+const changeLegend = ()=>{
 
+  if (status.screen === "detail") {
+    d3.select("#legend-cause-size div:last-child").html("The number of canyon accidents (cause nodes only).")
+    d3.select("#legend-correlation").style("display", "none")
+    d3.select("#legend-injury-type div:first-child").html("Accidents")
+    d3.select("#legend-injury-type .item").style("align-items", "center")
+    d3.selectAll("#legend-injury-type .item div:first-child").style("border-radius", "50px").style("width", "12px").style("height", "12px")
+    d3.select("#legend-note").html("The accident nodes are color encoded as the severity level of the most serious injury in the correspending accident.")
+  } else {
+    d3.select("#legend-cause-size div:last-child").html("The number of canyon accidents.")
+    d3.select("#legend-injury-type div:first-child").html("Injury Type and its Severity Level")
+    d3.select("#legend-correlation").style("display", null)
+    d3.select("#legend-injury-type .item").style("align-items", null)
+    d3.selectAll("#legend-injury-type .item div:first-child").style("border-radius", null).style("width", null).style("height", null)
+    d3.select("#legend-note").html("")
+  }
+}
 
 
 

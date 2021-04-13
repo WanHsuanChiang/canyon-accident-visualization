@@ -10,39 +10,39 @@
 </head>
 
 <body>
-    <!--
-    <div id="desc">
-        <h1>The Causes of Canyon Accidents</h1>
-        <h2>The correlation between each cause.</h2>
-
-        <ul>
-            <li>Circles represent causes. Each canyon accident might has multiple causes.</li>
-            <li>Links represent relationships. If an accident has three causes, these three causes will be connected.
-            </li>
-            <li>The size of circle represent the how freqently the cause contribute to accidents.</li>
-        </ul>
-        <p>Cite</p>
-        <ul>
-            <li>The layout is adapted from: https://bl.ocks.org/heybignick/3faf257bbbbc7743bb72310d03b86ee8</li>
-            <li>The method to convert accident data to node-link json: https://stackoverflow.com/a/54466624</li>
-        </ul>
-
-    </div>
-    <div id="legend"></div>
-    <label id="injury-filter">
-        Injury Type
-        <select id="injury-option"></select>
-    </label>
--->
-    <div id = "sidebar">
+    <div id="sidebar">
         <h1>Canyon Accident Case Study</h1>
-        <h2>The causes and the correlations between each other.</h2>      
+        <h2>The causes and the correlations between each other.</h2>
+        <div id="legend">            
+            <div id="legend-cause-type" class="legend-item vertical-title">
+                <div>Cause Type</div>
+                <div class="list">
+                    <div type="Human error">Human error</div>
+                    <div type="Natural environment">Natural environment</div>
+                    <div type="Uncategorized">Uncategorized</div>
+                </div>                
+            </div>
+            <div id="legend-cause-size" class="legend-item two-column">
+                <div><span>●</span><span>●</span></div>
+                <div>The number of canyon accidents</div>
+            </div>
+            <div id="legend-correlation" class="legend-item two-column">
+                <div></div>
+                <div>The frequency that two causes were identified in on single accident.</div>
+            </div>
+            <div id="legend-injury-type" class="legend-item vertical-title">
+                <div>Injury Type and its Severity Level</div>
+                <div class="list"></div>                
+            </div>
+            <div id="legend-note"></div>
+        </div>
     </div>
     <svg id="main-chart"></svg>
     <div id="contribution">
-        <p>The data comes from <a href="https://canyonaccident.org/" target="_blank">International Canyon Accident Database</a></p>
+        <p>The data comes from <a href="https://canyonaccident.org/" target="_blank">International Canyon Accident
+                Database</a></p>
     </div>
-    
+
 
     <script src="index.js"></script>
 </body>
