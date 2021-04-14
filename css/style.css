@@ -196,7 +196,7 @@ text {
 }
 
 .tooltip {
-  font-size: xx-small;
+  font-size: small;
   background-color: white;
   border-width: 1px;
   border-style: solid;
@@ -266,12 +266,11 @@ text {
 }
 
 .tooltip hr {
-  margin: 2em 0em;
+  margin: 1em 0em;
   opacity: 0.5;
 }
 
 .tooltip .tooltip-subtitle {
-  font-size: xx-small;
   color: #a6a6a6;
   margin-bottom: 1em;
 }
@@ -287,17 +286,38 @@ text {
 }
 
 .tooltip .view-more {
-  text-align: right;
   margin: 1em 0em;
+  text-align: right;
   width: -webkit-fit-content;
   width: -moz-fit-content;
   width: fit-content;
+  border-radius: 5px;
+  float: right;
+  padding: 0.5em 2em;
+  border-width: 1px;
+  /* 
+        a:-webkit-any-link{
+            text-decoration: none; 
+            color: white; 
+        }    
+        */
 }
 
 .tooltip .view-more a:link {
   text-decoration: none;
-  padding: 0.5em 1em;
   border-radius: 5px;
+}
+
+.tooltip .view-more.bg-dark a:link {
+  color: #fff5f0;
+}
+
+.tooltip .view-more.bg-light {
+  border-color: #67000d;
+}
+
+.tooltip .view-more.bg-light a:link {
+  color: #67000d;
 }
 
 .tooltip-title {
@@ -310,7 +330,7 @@ text {
 }
 
 .tooltip-title .cause-type {
-  font-size: xx-small;
+  font-size: x-small;
   margin-top: 0;
 }
 
@@ -477,6 +497,7 @@ text {
 
 .tooltip-analysis {
   margin: 1em 0;
+  max-height: 7em;
   width: 100%;
   max-width: calc($accident-tooltip-width - $tooltip-padding*2);
   -webkit-line-clamp: 5;
@@ -484,6 +505,7 @@ text {
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
+  padding-top: 0;
 }
 
 /*

@@ -259,6 +259,37 @@ function draw(data) {
     .attr('x', 0)
     .attr('y', function (d) { return radiusScale(d.value) / 16 })
     .style("font-size", function (d) { return radiusScale(d.value) / 4 + "px" });
+
+
+    let modify = [
+      "Inadequate equipment",
+      "Navigation error",
+      "Communication error",
+      "Equipment misuse",
+      "Group dynamics",
+      "Solo canyoneering"
+    ]
+    let modifyValue = [
+      10,
+      5,
+      5,
+      5,
+      6,
+      4,
+    ]
+    for( i = 0; i < modify.length; i++){
+      let ie = d3.select('.node[title="'+modify[i]+'"] text');
+      ie.text("");
+      ie.append("tspan").attr("text-anchor", "middle").attr("x",0).attr("y", -modifyValue[i]/2).text(modify[i].split(" ")[0]);
+      ie.append("tspan").attr("text-anchor", "middle").attr("x",0).attr("y",modifyValue[i] * 1.5).text(modify[i].split(" ")[1]);
+    }
+    
+
+
+
+
+
+    
   /*
     for(i = 0; i < network.nodes.length; i++){
       if (d3.select('[title="'+ network.nodes[i].id +'"] circle').attr("r") > network.nodes[i].cause.length* (radiusScale(network.nodes[i].value) / 2)){
@@ -482,25 +513,36 @@ const drawDetail = (data, cause) => {
 
 
   // detail with center
-  d3.select(".nodes").attr("class", "center").attr("title", "Back");
-  const centerNode = d3.select(".center .node");
-  const centerBBox = getCoords(".center .node");
-  const svgBBbox = svg.node().getBBox();
-
-  if (isHorizontal) {
-
-  } else {
+  d3.select(".nodes").attr("class", "center");
+  transformCenter();
+  function transformCenter() {
+    const centerNode = d3.select(".center .node");    
+    const centerBBox = getCoords(".center .node"); 
+    const svgBBbox = svg.node().getBBox();
     const adjustCenter = {// from relative coords to absolute coords
       x: svgBBbox.x + (svgBBbox.width / 2) + center.x,
       y: center.y + (svgBBbox.height / 2) + svgBBbox.y,
     };
-    const translate = {
-      dx: adjustCenter.x - centerBBox.x,
-      dy: adjustCenter.y - centerBBox.y,
+    if (isHorizontal) {
+      const sidebarBBox = getCoords("#sidebar");
+      console.log(sidebarBBox)
+      const translate = {
+        //x: adjustCenter.x - (sidebarBBox.x + sidebarBBox.width),
+        x: -width/2 + sidebarBBox.width + centerBBox.width/2,
+        y: -height/2 + centerBBox.height/2,
+      }
+      centerNode.transition().duration(2000).attr("transform", "translate(" + translate.x + "," + translate.y + ")")
+
+    } else {     
+      
+      const translate = {
+        dx: adjustCenter.x - centerBBox.x,
+        dy: adjustCenter.y - centerBBox.y,
+      }
+      centerNode.transition().duration(300).attr("transform", "translate(" + translate.x + "," + translate.y + ")")
+      centerNode.transition().duration(800).attr("transform", "translate(0,-50)")
     }
-    centerNode.transition().duration(300).attr("transform", "translate(" + translate.x + "," + translate.y + ")")
-    centerNode.transition().duration(800).attr("transform", "translate(0,-50)")
-  }
+  }  
 
 
   /*
@@ -784,6 +826,10 @@ const drawDetail = (data, cause) => {
 
       }
 
+      if (isHorizontal) {
+        d3.select("#controller").style("opacity",0.1)
+      }
+
     }
 
 
@@ -804,19 +850,25 @@ const drawDetail = (data, cause) => {
       d3.select('.tooltip[name="' + d.id + '"]').style("transition", 'opacity ' + sleepTime + 'ms');
       d3.select('.tooltip[name="' + d.id + '"]').style("opacity", "0")
 
-      // Usage!
-      sleep(sleepTime).then(() => {
-        // Do something after the sleep!
+      if (isHorizontal) {
+        d3.select("#controller").style("opacity",0.5)
+      }
 
-        if (!detailStatus.isTooltipHover && detailStatus.currentNode !== d.id && detailStatus.currentNode === null) {
+      if (!isDebug){
+        sleep(sleepTime).then(() => {
+          // Do something after the sleep!
+  
+          if (!detailStatus.isTooltipHover && detailStatus.currentNode !== d.id && detailStatus.currentNode === null) {
+  
+            d3.select('.tooltip[name="' + d.id + '"]').remove();
+            detailStatus.isTooltip = false;
+  
+          }
+  
+        });
+  
 
-          d3.select('.tooltip[name="' + d.id + '"]').remove();
-          detailStatus.isTooltip = false;
-
-        }
-
-      });
-
+      }
 
     }
 
@@ -1134,7 +1186,14 @@ const drawDetail = (data, cause) => {
       }
 
       // view more button
-      tooltip.append("div").attr("class", "view-more").append("a").attr("href", nodeData.accidentUrl).attr("target", "_blank").html("View More");
+      let btn = tooltip.append("div").attr("class", "view-more")
+      btn.append("a").attr("href", nodeData.accidentUrl).attr("target", "_blank").html("View More");
+      btn.style("background-color",injuryColor(nodeData.injuryMax))
+      if(injuryRating[nodeData.injuryMax] > injuryList.length /2 ){
+        btn.attr("class", btn.attr("class") + " bg-dark")
+      } else {
+        btn.attr("class", btn.attr("class") + " bg-light")
+      }
 
 
 
@@ -1361,10 +1420,10 @@ const drawTooltip = (nodeData, data, nodeNeighbor) => {
     console.log(d3.max(injuryData, d => d.value))
 
     tooltip.append("p").html(function () {
-      let max = d3.max(injuryData, d => d.value) ;
-      let num = ((max/ nodeData.value) * 100).toFixed(0)
+      let max = d3.max(injuryData, d => d.value);
+      let num = ((max / nodeData.value) * 100).toFixed(0)
       let array = injuryData.sort(function (a, b) { return -a.injuryValue - -b.injuryValue });
-      let injury = array[getJsonArrayIndex(array,"value",max)].injury.toLowerCase();
+      let injury = array[getJsonArrayIndex(array, "value", max)].injury.toLowerCase();
       return nodeData.value + " accidents occurred because of " + nodeData.id.toLowerCase() + ". " + num + "% of the accidents resulted in " + injury + ".";
     })
 
@@ -1529,7 +1588,7 @@ const changeLegend = (cause, isHorizontal) => {
   } else {
     d3.select("#sidebar h1").html("Canyon Accident Cause Analysis");
     d3.select("#sidebar h2").html("Understand the causes and the correlations between each other.")
-    d3.select("#legend-cause-size div:last-child").html("The number of canyon accidents.");
+    d3.select("#legend-cause-size div:last-child").html("The count of the linked causes resulting in one single accident.");
     d3.select("#legend-injury-type div:first-child").html("Injury Type and its Severity Level");
     d3.select("#legend-correlation").style("display", null);
     d3.select("#legend-injury-type .item").style("align-items", null);

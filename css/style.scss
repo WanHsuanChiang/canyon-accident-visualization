@@ -231,7 +231,7 @@ $tooltip-padding: 2em;
 
 .tooltip {
 
-    font-size: xx-small;
+    font-size: small;
 
     &.main-cause-tooltip {
         width: $main-tooltip-width;
@@ -313,11 +313,10 @@ $tooltip-padding: 2em;
 
 .tooltip {
     hr {
-        margin: 2em 0em;
+        margin: 1em 0em;
         opacity: 0.5;
     }
     .tooltip-subtitle {
-        font-size:  xx-small;
         color: lighten($default-color, 65);
         margin-bottom: 1em;
     }
@@ -331,14 +330,36 @@ $tooltip-padding: 2em;
         }
     }
     .view-more {
-        text-align: right;
+        $max: #67000d;
+        $min: #fff5f0;
+
         margin: 1em 0em;
-        width: fit-content;
+        text-align: right;
+        width: fit-content;    
+        border-radius: 5px; 
+        float: right;
+        padding: 0.5em 2em;
+        border-width: 1px;  
+        /* 
+        a:-webkit-any-link{
+            text-decoration: none; 
+            color: white; 
+        }    
+        */   
         a:link {
-            text-decoration: none;
-            padding: 0.5em 1em;
-            border-radius: 5px; 
-        }  
+            text-decoration: none;            
+            border-radius: 5px;
+            //color: white;   
+        }         
+        &.bg-dark a:link {
+            color: $min;
+        }
+        &.bg-light {
+            a:link {
+                color: $max;
+            }
+            border-color: $max;            
+        }
         
     }
 
@@ -354,7 +375,7 @@ $tooltip-padding: 2em;
     }
 
     .cause-type {
-        font-size: xx-small;
+        font-size: x-small;
         margin-top: 0;
     }
 }
@@ -519,6 +540,7 @@ $tooltip-padding: 2em;
 
 .tooltip-analysis {
     margin: 1em 0;
+    max-height: 7em;
     width: 100%;
     // https://medium.com/@dvmsoni3132/easy-truncate-multi-line-ellipsis-with-pure-css-e0d24d68078e
     max-width: calc($accident-tooltip-width - $tooltip-padding*2);
@@ -527,6 +549,8 @@ $tooltip-padding: 2em;
     overflow:hidden;
     text-overflow: ellipsis;
     display: -webkit-box; 
+    padding-top: 0;
+  
 }
 
 
