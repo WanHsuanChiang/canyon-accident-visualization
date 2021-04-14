@@ -1141,7 +1141,7 @@ const drawDetail = (data, cause) => {
       tooltipList.append("div").attr("class", "canyon");
       d3.select(".canyon").append("div").html("Canyon");
       let locationString = d3.select(".canyon").append("div");
-      if(nodeData.canyon.includes("")){
+      if(nodeData.canyon.includes(",")){
         locationString.html('<a href="' + nodeData.canyonUrl.split(",")[0] + '" target="_blank">' + nodeData.canyon.split(",")[0] + '</a>, <a href="' + nodeData.canyonUrl.split(",")[1] + '" target="_blank">' + nodeData.canyon.split(",")[1] + '</a>')
       } else if (nodeData.canyonUrl.includes("http")) {
         locationString.html('<a href="' + nodeData.canyonUrl + '" target="_blank">' + nodeData.canyon + '</a>')        
