@@ -8,7 +8,7 @@ $uncategorized-color: #012749;
 $default-color: black;
 $bg-color: white;
 
-$chart-font-size: 10px;
+$chart-font-size: 12px;
 
 html , body {
     height: 100vh;
@@ -28,20 +28,49 @@ html , body {
 }
 
 #controller {
+    bottom: 1em;
+    left: 1em;
+    opacity: 0;    
+
+}
+
+.float-btn {
+
     $index: 30px;
     width: $index;
     height: $index;
     border-radius: $index;
     box-shadow: 5px 5px 10px $default-color;
     position: absolute;
-    bottom: 1em;
-    left: 1em;
-    z-index: 1000;
-    opacity: 0;
+    z-index: 1200;
+    padding: 0.5em;
     cursor: pointer;
-    padding: 5px;
     &:hover{
         opacity: 1;
+    }
+}
+
+#filter-icon {
+    opacity: 0.7;
+    top: 1em;
+    right: 1em; 
+
+}
+
+#filter {
+    position:absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    background-color: opacify($color: black, $amount: 50);
+    > div{
+        // filter content
+        background-color: $bg-color;
+        border-radius: 5px;
+        height: 100px;
+        width: 100px;
     }
 }
 
@@ -187,8 +216,7 @@ svg {
         fill: #2d0d68;
     }
     &.accident circle {
-        fill: $accident;
-        r:20;
+        fill: $accident;        
     }
     .cause-label {
         fill: white;
@@ -406,10 +434,10 @@ $tooltip-padding: 2em;
         }
     }
 
-    .icon {
+    .switch {
         cursor: pointer;
     }
-    .rating div:last-child{
+    .rating > div:last-child{
         display: flex;
         flex-direction: row;
         justify-content: flex-end;
@@ -561,7 +589,7 @@ $tooltip-padding: 2em;
     max-height: 7em;
     width: 100%;
     // https://medium.com/@dvmsoni3132/easy-truncate-multi-line-ellipsis-with-pure-css-e0d24d68078e
-    max-width: calc($accident-tooltip-width - $tooltip-padding*2);
+    //max-width: calc($accident-tooltip-width - $tooltip-padding*2);
     -webkit-line-clamp: 5;
    -webkit-box-orient: vertical;
     overflow:hidden;
@@ -714,7 +742,6 @@ $injury-color-min: #fff5f0;
 #legend { 
 
     $space: 5px;
-
     font-size: small;
 
     .legend-item {
@@ -728,7 +755,7 @@ $injury-color-min: #fff5f0;
         &>div:first-child{
             writing-mode: vertical-rl;
             text-orientation: mixed;
-            font-size: 5px;
+            //font-size: 5px;
             padding-right: 0.5em;
         }
     }

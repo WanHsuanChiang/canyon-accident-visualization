@@ -132,6 +132,10 @@ d3.csv(dataUrl).then(function (accidentData) {
   drawSidebar();
   draw(accidentData);
 
+  d3.select("#filter-icon").on("click", showFilter());
+
+    /*
+
   // TODO
   d3.select('#injury-option')
     .on('change', function () {
@@ -142,7 +146,7 @@ d3.csv(dataUrl).then(function (accidentData) {
       })
       draw(getNetworkData(filteredData));
     });
-  /*
+
     d3.selectAll(".node").on("click", function () {
       d3.selectAll(".tooltip").attr("show", false);
       let cause = d3.select(this).attr('title');
@@ -1016,7 +1020,7 @@ const drawDetail = (data, cause) => {
           .attr("class", "injury-chart")
           .style("height", function () { return (indvInjuries.length > 1) ? "100px" : "60px" })
           .append("svg")
-          .attr("viewBox", function () { return (indvInjuries.length > 1) ? "0 0 200 100" : "0 0 200 60" });
+          .attr("viewBox", function () { return (indvInjuries.length > 1) ? "0 0 200 50" : "0 0 200 30" });
         //.attr("preserveAspectRatio", "xMidYMid meet");
 
 
@@ -1027,7 +1031,8 @@ const drawDetail = (data, cause) => {
           .enter().append("g")
           .attr("fill", function (d) { return injuryColor(d.name) })
           .attr("name", function (d) { return d.name })
-          .attr("value", function (d) { return d.value });
+          .attr("value", function (d) { return d.value })
+          .attr("title", (d)=> d.name)
 
         injuryBar.append("rect")
           .attr("width", (1 / injuryList.length * 100) + "%")
@@ -1142,20 +1147,23 @@ const drawDetail = (data, cause) => {
       d3.select(".rating").append("div").html("Canyon Rating");
       let ratingContent = d3.select(".rating").append("div").attr("title", "Switch to ACA Canyon Rating System.").attr("class","switch");
       let ratingString = ratingContent.append("div").html((status.canyonRating === "FR") ? nodeData.canyonRatingFR : nodeData.canyonRatingACA);
-      let icon = ratingContent.append("div").attr("class","icon")
-      icon.append("img").attr("src", "source/switch.svg");      
-      ratingContent.on("click",function(){
-        if(status.canyonRating === "FR"){
-          ratingString.html(nodeData.canyonRatingACA );
-          ratingContent.attr("title","Switch to French Canyon Rating System.");
-          status.canyonRating = "ACA";
-        } else {
-          ratingString.html(nodeData.canyonRatingFR);
-          ratingContent.attr("title","Switch to ACA Canyon Rating System.");
-          status.canyonRating = "FR";
-        }
-      })
-      
+
+      if (nodeData.canyonRatingFR !== "Unknown"){
+        let icon = ratingContent.append("div").attr("class","icon")
+        icon.append("img").attr("src", "source/switch.svg"); 
+        ratingContent.on("click",function(){
+          if(status.canyonRating === "FR"){
+            ratingString.html(nodeData.canyonRatingACA );
+            ratingContent.attr("title","Switch to French Canyon Rating System.");
+            status.canyonRating = "ACA";
+          } else {
+            ratingString.html(nodeData.canyonRatingFR);
+            ratingContent.attr("title","Switch to ACA Canyon Rating System.");
+            status.canyonRating = "FR";
+          }
+        })
+      }     
+ 
 
 
       /*
@@ -1434,7 +1442,6 @@ const drawTooltip = (nodeData, data, nodeNeighbor) => {
       */
     }
 
-    console.log(d3.max(injuryData, d => d.value))
 
     tooltip.append("p").html(function () {
       let max = d3.max(injuryData, d => d.value);
@@ -1896,6 +1903,28 @@ const getTreeData = (data, cause) => {
 
   return treeData;
 }
+
+
+
+function showFilter(){
+  console.log("fire showFilter")
+  const filter = d3.select("#filter");
+  filter.style("display","block");
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // https://stackoverflow.com/a/53107778
 const getPairs = array => (
