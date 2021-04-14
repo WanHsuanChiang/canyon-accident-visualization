@@ -882,6 +882,8 @@ const drawDetail = (data, cause) => {
 
   const drawAccidentTooltip = (nodeData) => {
 
+    console.log(nodeData)
+
     const isDraw = () => {
       if (
         status.screen === "detail"
@@ -920,8 +922,14 @@ const drawDetail = (data, cause) => {
         .attr("name", nodeData.id);
 
       let tooltipTitle = tooltip.append("div").attr("class", "tooltip-title");
-      tooltipTitle.append("h4").html(nodeData.canyon + ' (' + nodeData.date + ')');
-      //tooltipTitle.append("span").attr("class", "date").html(nodeData.date);
+
+      if (nodeData.canyon.includes(",")){
+        tooltipTitle.append("h4").html(nodeData.canyon.split(",").join(", ") + ' (' + nodeData.date + ')');
+      }else {
+        tooltipTitle.append("h4").html(nodeData.canyon + ' (' + nodeData.date + ')');
+      }
+      
+
 
       // cuase list
       /*
@@ -1133,8 +1141,10 @@ const drawDetail = (data, cause) => {
       tooltipList.append("div").attr("class", "canyon");
       d3.select(".canyon").append("div").html("Canyon");
       let locationString = d3.select(".canyon").append("div");
-      if (nodeData.canyonUrl.includes("http")) {
-        locationString.html('<a href="' + nodeData.canyonUrl + '" target="_blank">' + nodeData.canyon + '</a>')
+      if(nodeData.canyon.includes("")){
+        locationString.html('<a href="' + nodeData.canyonUrl.split(",")[0] + '" target="_blank">' + nodeData.canyon.split(",")[0] + '</a>, <a href="' + nodeData.canyonUrl.split(",")[1] + '" target="_blank">' + nodeData.canyon.split(",")[1] + '</a>')
+      } else if (nodeData.canyonUrl.includes("http")) {
+        locationString.html('<a href="' + nodeData.canyonUrl + '" target="_blank">' + nodeData.canyon + '</a>')        
       } else {
         locationString.html(nodeData.canyon);
       }
@@ -1348,8 +1358,11 @@ const drawTooltip = (nodeData, data, nodeNeighbor) => {
       .attr("cause", nodeData.id)
       .attr("type", (causeType[nodeData.id] === undefined) ? "Uncategorized" : causeType[nodeData.id]);
 
+
+
     let tooltipTitle = tooltip.append("div").attr("class", "tooltip-title");
     tooltipTitle.append("h4").html(nodeData.id);
+    
 
     tooltipTitle.append("span").attr("class", "cause-type").html((causeType[nodeData.id] === undefined) ? "Uncategorized" : causeType[nodeData.id])
     /*
@@ -1463,7 +1476,7 @@ const drawTooltip = (nodeData, data, nodeNeighbor) => {
 
       const barData = nodeNeighbor.sort(function (a, b) { return -a.value - -b.value });
 
-      const barH = 12; //px
+      const barH = 16; //px
       const padding = 2; // px
       const margin = ({ top: 5, right: 0, bottom: 15, left: 0 });
       const chartH = barData.length * barH + (barData.length - 1) * padding + margin.top + margin.bottom;
@@ -1497,13 +1510,13 @@ const drawTooltip = (nodeData, data, nodeNeighbor) => {
 
       bar.append("text")
         .attr("x", function (d) { return width(d.value) + 2 + "%" })
-        .attr("y", (d, i) => i * (barH + padding) + margin.top + barH - 2)
+        .attr("y", (d, i) => i * (barH + padding) + margin.top + barH - 4)
         .text((d) => d.name)
 
       bar.append("text").attr("class", "number")
         .attr("text-anchor", "end")
         .attr("x", function (d) { return width(d.value) - 1 + "%" })
-        .attr("y", (d, i) => i * (barH + padding) + margin.top + barH - 2)
+        .attr("y", (d, i) => i * (barH + padding) + margin.top + barH - 4)
         .text((d) => d.value)
 
       barSvg.append("text").attr("class", "tooltip-note")
