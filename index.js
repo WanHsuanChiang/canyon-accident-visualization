@@ -22,6 +22,7 @@ let status = {
   isHover: false,
   isTooltip: false,
   isTooltipHover: false,
+  canyonRating: "FR", //"FR","ACA"
 }
 
 let filter = {
@@ -261,35 +262,35 @@ function draw(data) {
     .style("font-size", function (d) { return radiusScale(d.value) / 4 + "px" });
 
 
-    let modify = [
-      "Inadequate equipment",
-      "Navigation error",
-      "Communication error",
-      "Equipment misuse",
-      "Group dynamics",
-      "Solo canyoneering"
-    ]
-    let modifyValue = [
-      10,
-      5,
-      5,
-      5,
-      6,
-      4,
-    ]
-    for( i = 0; i < modify.length; i++){
-      let ie = d3.select('.node[title="'+modify[i]+'"] text');
-      ie.text("");
-      ie.append("tspan").attr("text-anchor", "middle").attr("x",0).attr("y", -modifyValue[i]/2).text(modify[i].split(" ")[0]);
-      ie.append("tspan").attr("text-anchor", "middle").attr("x",0).attr("y",modifyValue[i] * 1.5).text(modify[i].split(" ")[1]);
-    }
-    
+  let modify = [
+    "Inadequate equipment",
+    "Navigation error",
+    "Communication error",
+    "Equipment misuse",
+    "Group dynamics",
+    "Solo canyoneering"
+  ]
+  let modifyValue = [
+    10,
+    5,
+    5,
+    5,
+    6,
+    4,
+  ]
+  for (i = 0; i < modify.length; i++) {
+    let ie = d3.select('.node[title="' + modify[i] + '"] text');
+    ie.text("");
+    ie.append("tspan").attr("text-anchor", "middle").attr("x", 0).attr("y", -modifyValue[i] / 2).text(modify[i].split(" ")[0]);
+    ie.append("tspan").attr("text-anchor", "middle").attr("x", 0).attr("y", modifyValue[i] * 1.5).text(modify[i].split(" ")[1]);
+  }
 
 
 
 
 
-    
+
+
   /*
     for(i = 0; i < network.nodes.length; i++){
       if (d3.select('[title="'+ network.nodes[i].id +'"] circle').attr("r") > network.nodes[i].cause.length* (radiusScale(network.nodes[i].value) / 2)){
@@ -516,8 +517,8 @@ const drawDetail = (data, cause) => {
   d3.select(".nodes").attr("class", "center");
   transformCenter();
   function transformCenter() {
-    const centerNode = d3.select(".center .node");    
-    const centerBBox = getCoords(".center .node"); 
+    const centerNode = d3.select(".center .node");
+    const centerBBox = getCoords(".center .node");
     const svgBBbox = svg.node().getBBox();
     const adjustCenter = {// from relative coords to absolute coords
       x: svgBBbox.x + (svgBBbox.width / 2) + center.x,
@@ -528,13 +529,13 @@ const drawDetail = (data, cause) => {
       console.log(sidebarBBox)
       const translate = {
         //x: adjustCenter.x - (sidebarBBox.x + sidebarBBox.width),
-        x: -width/2 + sidebarBBox.width + centerBBox.width/2,
-        y: -height/2 + centerBBox.height/2,
+        x: -width / 2 + sidebarBBox.width + centerBBox.width / 2,
+        y: -height / 2 + centerBBox.height / 2 - centerBBox.height / 6,
       }
       centerNode.transition().duration(2000).attr("transform", "translate(" + translate.x + "," + translate.y + ")")
 
-    } else {     
-      
+    } else {
+
       const translate = {
         dx: adjustCenter.x - centerBBox.x,
         dy: adjustCenter.y - centerBBox.y,
@@ -542,7 +543,7 @@ const drawDetail = (data, cause) => {
       centerNode.transition().duration(300).attr("transform", "translate(" + translate.x + "," + translate.y + ")")
       centerNode.transition().duration(800).attr("transform", "translate(0,-50)")
     }
-  }  
+  }
 
 
   /*
@@ -827,7 +828,7 @@ const drawDetail = (data, cause) => {
       }
 
       if (isHorizontal) {
-        d3.select("#controller").style("opacity",0.1)
+        d3.select("#controller").style("opacity", 0.1)
       }
 
     }
@@ -851,22 +852,22 @@ const drawDetail = (data, cause) => {
       d3.select('.tooltip[name="' + d.id + '"]').style("opacity", "0")
 
       if (isHorizontal) {
-        d3.select("#controller").style("opacity",0.5)
+        d3.select("#controller").style("opacity", 0.5)
       }
 
-      if (!isDebug){
+      if (!isDebug) {
         sleep(sleepTime).then(() => {
           // Do something after the sleep!
-  
+
           if (!detailStatus.isTooltipHover && detailStatus.currentNode !== d.id && detailStatus.currentNode === null) {
-  
+
             d3.select('.tooltip[name="' + d.id + '"]').remove();
             detailStatus.isTooltip = false;
-  
+
           }
-  
+
         });
-  
+
 
       }
 
@@ -1139,7 +1140,24 @@ const drawDetail = (data, cause) => {
       // canyon rating
       tooltipList.append("div").attr("class", "rating");
       d3.select(".rating").append("div").html("Canyon Rating");
-      d3.select(".rating").append("div").html((filter.canyonRating === "FR") ? nodeData.canyonRatingFR : nodeData.canyonRatingACA);
+      let ratingContent = d3.select(".rating").append("div").attr("title", "Switch to ACA Canyon Rating System.").attr("class","switch");
+      let ratingString = ratingContent.append("div").html((status.canyonRating === "FR") ? nodeData.canyonRatingFR : nodeData.canyonRatingACA);
+      let icon = ratingContent.append("div").attr("class","icon")
+      icon.append("img").attr("src", "source/switch.svg");      
+      ratingContent.on("click",function(){
+        if(status.canyonRating === "FR"){
+          ratingString.html(nodeData.canyonRatingACA );
+          ratingContent.attr("title","Switch to French Canyon Rating System.");
+          status.canyonRating = "ACA";
+        } else {
+          ratingString.html(nodeData.canyonRatingFR);
+          ratingContent.attr("title","Switch to ACA Canyon Rating System.");
+          status.canyonRating = "FR";
+        }
+      })
+      
+
+
       /*
       // cause
       tooltipList.append("div").attr("class", "cause");
@@ -1188,8 +1206,8 @@ const drawDetail = (data, cause) => {
       // view more button
       let btn = tooltip.append("div").attr("class", "view-more")
       btn.append("a").attr("href", nodeData.accidentUrl).attr("target", "_blank").html("View More");
-      btn.style("background-color",injuryColor(nodeData.injuryMax))
-      if(injuryRating[nodeData.injuryMax] > injuryList.length /2 ){
+      btn.style("background-color", injuryColor(nodeData.injuryMax))
+      if (injuryRating[nodeData.injuryMax] > injuryList.length / 2) {
         btn.attr("class", btn.attr("class") + " bg-dark")
       } else {
         btn.attr("class", btn.attr("class") + " bg-light")
@@ -1270,7 +1288,6 @@ const highlight = (nodeData, data) => {
   d3.selectAll(".node").attr("highlighted", false);
   targetNode.attr("highlighted", true);
   d3.select(".center .node").attr("highlighted", true);
-
 
   if (nodeData.category === "accident") {
     // of is accident node, highlight cause

@@ -195,6 +195,10 @@ text {
   }
 }
 
+.center .node[highlighted=true] {
+  opacity: 1;
+}
+
 .tooltip {
   font-size: small;
   background-color: white;
@@ -334,6 +338,11 @@ text {
   margin-top: 0;
 }
 
+.tooltip-list img {
+  height: 1.5em;
+  padding-left: 0.5em;
+}
+
 .tooltip-list > div {
   display: -webkit-box;
   display: -ms-flexbox;
@@ -345,6 +354,9 @@ text {
   -webkit-box-pack: justify;
       -ms-flex-pack: justify;
           justify-content: space-between;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
 }
 
 .tooltip-list > div > div:nth-child(1) {
@@ -353,6 +365,23 @@ text {
 
 .tooltip-list > div > div:nth-child(2) {
   margin: 0 0 0 1em;
+}
+
+.tooltip-list .icon {
+  cursor: pointer;
+}
+
+.tooltip-list .rating div:last-child {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: row;
+          flex-direction: row;
+  -webkit-box-pack: end;
+      -ms-flex-pack: end;
+          justify-content: flex-end;
 }
 
 .main-cause-tooltip .injury-chart svg {

@@ -219,6 +219,9 @@ text {
         from { opacity: 1; }
         to { opacity: 0.3; }
     }
+    &[highlighted= true]{
+        opacity: 1;
+    }
 }
 
 
@@ -382,12 +385,18 @@ $tooltip-padding: 2em;
 
 
 
-.tooltip-list {    
+.tooltip-list {
+
+    img {
+        height: 1.5em;
+        padding-left: 0.5em;
+    }
 
     & > div {
         display: flex;
         flex-direction: row;
         justify-content: space-between;
+        align-items: center;
 
         & > div:nth-child(1) {
             margin: 0 1em 0 0;
@@ -395,7 +404,16 @@ $tooltip-padding: 2em;
         & > div:nth-child(2) {
             margin: 0 0 0 1em;
         }
-    }    
+    }
+
+    .icon {
+        cursor: pointer;
+    }
+    .rating div:last-child{
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-end;
+    } 
 }
 
 .main-cause-tooltip .injury-chart {
