@@ -276,7 +276,6 @@ function draw(data) {
   //if (j = network.nodes[i].causeArray.length){
   //  tspan.attr("dy", "1.2em").attr("dx", 0);
   //}     
-  console.log(d3.select('[title="Rappel error"] circle').attr("r"))
 
   node.attr("drag", false)
     .call(d3.drag()
@@ -364,9 +363,9 @@ function draw(data) {
       targetNode.attr("highlighted", true);
       let index = getJsonArrayIndex(nodeNeighbor, "cause", cause);
       if (index !== -1) {
-        let causeNeighbors = nodeNeighbor[index].neighbor;
+        let causeNeighbors = nodeNeighbor[index].neighbor; //json, with name and value
         for (i = 0; i < causeNeighbors.length; i++) {
-          d3.select('[title="' + causeNeighbors[i] + '"]').attr("highlighted", true);
+          d3.select('[title="' + causeNeighbors[i]["name"] + '"]').attr("highlighted", true);
         }
       }
       // highlight links
@@ -379,8 +378,12 @@ function draw(data) {
         .attr("highlighted", false)
 
 
-
-      drawTooltip(network.nodes[d.index], data, cause);
+      try {
+        drawTooltip(network.nodes[d.index], data, nodeNeighbor[index].neighbor);
+      } catch {
+        drawTooltip(network.nodes[d.index], data, null);
+      }
+      
 
 
     }
@@ -392,7 +395,7 @@ function draw(data) {
       status.isHover = false;
       d3.selectAll(".node").attr("highlighted", null);
       d3.selectAll(".link").attr("highlighted", null);
-      d3.select('.tooltip').remove();
+      if (!isDebug) { d3.select('.tooltip').remove() };
       status.isTooltip = false;
 
       // highlight sidebar
@@ -479,7 +482,7 @@ const drawDetail = (data, cause) => {
 
 
   // detail with center
-  d3.select(".nodes").attr("class", "center").attr("title","Back");
+  d3.select(".nodes").attr("class", "center").attr("title", "Back");
   const centerNode = d3.select(".center .node");
   const centerBBox = getCoords(".center .node");
   const svgBBbox = svg.node().getBBox();
@@ -489,14 +492,14 @@ const drawDetail = (data, cause) => {
   } else {
     const adjustCenter = {// from relative coords to absolute coords
       x: svgBBbox.x + (svgBBbox.width / 2) + center.x,
-      y: center.y + (svgBBbox.height /2) + svgBBbox.y ,
+      y: center.y + (svgBBbox.height / 2) + svgBBbox.y,
     };
     const translate = {
       dx: adjustCenter.x - centerBBox.x,
-      dy:adjustCenter.y - centerBBox.y,
+      dy: adjustCenter.y - centerBBox.y,
     }
-    centerNode.transition().duration(300).attr("transform","translate(" + translate.x +","+translate.y +")")
-    centerNode.transition().duration(800).attr("transform","translate(0,-50)")
+    centerNode.transition().duration(300).attr("transform", "translate(" + translate.x + "," + translate.y + ")")
+    centerNode.transition().duration(800).attr("transform", "translate(0,-50)")
   }
 
 
@@ -913,10 +916,6 @@ const drawDetail = (data, cause) => {
 
           circle.attr("x", 50).attr("y", 100)
           //text.attr("x", circleXY.x).attr("y",circleXY.y)
-          console.log(svgBBox)
-          console.log(circleBBox)
-          //console.log(textBBox)
-          console.log(causeBullet.node().getBBox())
 
 
         }
@@ -1126,7 +1125,7 @@ const drawDetail = (data, cause) => {
 
         if (analysisContent !== "") {
           tooltip.append("hr");
-          tooltip.append("span").attr("class", "analysis-title").html("Analysis");
+          tooltip.append("span").attr("class", "tooltip-subtitle").html("Analysis");
           tooltip.append("div").attr("class", "tooltip-analysis").html(analysisContent);
         }
 
@@ -1254,9 +1253,9 @@ const drawFilter = (array) => {
   }
 }
 
-const drawTooltip = (nodeData, data, cause) => {
+const drawTooltip = (nodeData, data, nodeNeighbor) => {
 
-  if (status.isHover && status.screen === "cause") {
+  if (status.isHover && status.screen === "cause" && nodeNeighbor !== null) {
 
     status.isTooltip = true;
 
@@ -1267,94 +1266,163 @@ const drawTooltip = (nodeData, data, cause) => {
 
     let tooltipTitle = tooltip.append("div").attr("class", "tooltip-title");
     tooltipTitle.append("h4").html(nodeData.id);
+
     tooltipTitle.append("span").attr("class", "cause-type").html((causeType[nodeData.id] === undefined) ? "Uncategorized" : causeType[nodeData.id])
+    /*
     let tooltipList = tooltip.append("div").attr("class", "tooltip-list");
     tooltipList.append("div").attr("class", "accident-number");
     d3.selectAll(".accident-number").append("div").html("Accident Numbers");
     d3.selectAll(".accident-number").append("div").html(nodeData.value);
+    */
+    
+    drawInjuryChart();
+    function drawInjuryChart() {
 
+      const chartHeight = 10;
 
-    /* draw small injury diagram start*/
-    // https://observablehq.com/@eesur/d3-single-stacked-bar
+      // draw injury chart
+      // https://codepen.io/nlounds/pen/GzKwt
 
-    // set up data
-    let injuryData = [];
-    let total = nodeData.value;
-    //let total = d3.sum(injuryData, d => d.value);
+      /* draw small injury diagram start*/
+      // https://observablehq.com/@eesur/d3-single-stacked-bar
 
-    // for each accident
-    for (i = 0; i < nodeData.accidents.length; i++) {
+      // set up data
+      let injuryData = [];
+      let total = nodeData.value;
+      //let total = d3.sum(injuryData, d => d.value);
 
-      let injuryIndex = getJsonArrayIndex(injuryData, "injury", data[i].injuryMax);
-      if (injuryIndex === -1) {
-        // push
-        injuryData.push({
-          "injury": data[i].injuryMax,
-          "injuryValue": injuryRating[data[i].injuryMax],
-          "value": 1,
-        });
-      } else {
-        // change value
-        let originValue = injuryData[injuryIndex].value;
-        injuryData[injuryIndex].value = originValue + 1;
+      // for each accident
+      for (i = 0; i < nodeData.accidents.length; i++) {
+
+        let injuryIndex = getJsonArrayIndex(injuryData, "injury", data[i].injuryMax);
+        if (injuryIndex === -1) {
+          // push
+          injuryData.push({
+            "injury": data[i].injuryMax,
+            "injuryValue": injuryRating[data[i].injuryMax],
+            "value": 1,
+          });
+        } else {
+          // change value
+          let originValue = injuryData[injuryIndex].value;
+          injuryData[injuryIndex].value = originValue + 1;
+        }
       }
+
+      injuryData.sort(function (a, b) { return +a.injuryValue - +b.injuryValue });
+      /*
+          // add cumulative and percentage in injury dataset    
+          for (j = 0; j < injuryData.length; j++) {
+            if (j = 0) {
+              injuryData[j].cumulative= 0;
+            } else {
+              injuryData[j].cumulative = 0;
+            }
+          }
+      
+      */
+
+      let injurySvg = tooltip.append("div").style("height",chartHeight + "px").attr("class", "injury-chart")
+        .append("svg")
+        .attr("viewBox", "0 0 300 " + chartHeight)
+      //.attr("preserveAspectRatio", "xMidYMid meet");
+      let injuryBar = injurySvg.selectAll("g")
+        .data(injuryData)
+        .enter().append("g")
+        .attr("injury-max", function (d) { return d.injury });
+
+      let percentSoFar = 0;
+      injuryBar.append("rect")
+        .attr("height", "10px")
+        .attr("width", function (d) { return ((d.value / total) * 100) + "%" })
+        .attr("y", 0)
+        .attr("x", function (d) {
+          let prePrecent = percentSoFar;
+          let thisPrecent = (d.value / total) * 100;
+          percentSoFar = percentSoFar + thisPrecent;
+          return prePrecent + "%";
+        })
+        .style("fill", function (d) { return injuryColor(d.injury); });
+      /*
+      injuryBar.append("text").text(function (d) { return d.injury })
+        .attr("y", 8)
+        .attr("x", function (d) { return d3.select('[injury-max = "' + d.injury + '"] rect').attr("x") });
+
+      */
+      //injuryLabel.style("transform","translate(300,150) rotate(0)");
+
+      /*
+      tooltip.append("svg")
+      .attr("viewbox", "0 0 50 100")
+      //
+      .append("g");
+      */
     }
 
-    injuryData.sort(function (a, b) { return -a.injuryValue - -b.injuryValue });
-    /*
-        // add cumulative and percentage in injury dataset    
-        for (j = 0; j < injuryData.length; j++) {
-          if (j = 0) {
-            injuryData[j].cumulative= 0;
-          } else {
-            injuryData[j].cumulative = 0;
-          }
-        }
+    tooltip.append("p").html(nodeData.value+ " accidents occurred because of " + nodeData.id.toLowerCase() + ".");
+
+    drawBarChart();
+    function drawBarChart() {
+
+      const barData = nodeNeighbor.sort(function (a, b) { return -a.value - -b.value });  
+
+      const barH = 12; //px
+      const padding = 2; // px
+      const margin = ({ top: 5, right: 0, bottom: 15, left: 0 });
+      const chartH = barData.length * barH + (barData.length - 1) * padding + margin.top + margin.bottom;
+      //const margin = ({top: 30, right: 0, bottom: 10, left: 30});            
+
+      tooltip.append("span").attr("class","tooltip-subtitle").html("The causes identified in the same accident. (frequency)");
+      const barSvg = tooltip.append("div").style("height", chartH + "px").attr("class", "neighor-cause-chart")
+      .append("svg").attr("viewBox", "0 0 300 " + chartH);
+      //tooltip.append("span").attr("class","tooltip-note").html("Many causes can contribute to a single accident.")   
+
+
+
+      // https://observablehq.com/@d3/horizontal-bar-chart          
+
+      const width = d3.scaleLinear()
+        .domain([0, d3.max(barData, d => d.value)])
+        .range([0, 50])
+
+      let bar = barSvg.append("g")
+        .selectAll("g")
+        .data(barData)
+        .enter().append("g")
+        .attr("type", (d) => getCauseType(d.name))
+        .attr("name", (d) => d.name)
+
+      bar.append("rect")
+        .attr("x", 0)
+        .attr("y", (d, i) => i * (barH + padding) + margin.top)
+        .attr("width", d => width(d.value) + "%")
+        .attr("height", barH + "px")
+
+      bar.append("text")
+      .attr("x", function(d){return width(d.value) + 2 + "%" })
+      .attr("y",(d, i) => i * (barH + padding) + margin.top + barH - 2)
+      .text((d) => d.name )
+
+      bar.append("text").attr("class","number")
+      .attr("text-anchor","end")
+      .attr("x", function(d){return width(d.value) -1 + "%" })
+      .attr("y",(d, i) => i * (barH + padding) + margin.top + barH - 2)
+      .text((d)=> d.value)
+
+      barSvg.append("text").attr("class","tooltip-note")
+      .attr("x",0)
+      .attr("y","98%")
+      .text("* Many causes can contribute to a single accident.")
+
+    }
+
+
+
     
-    */
-    // draw
-    // https://codepen.io/nlounds/pen/GzKwt
-
-    let injurySvg = tooltip.append("div").attr("class", "injury-chart")
-      .append("svg")
-      .attr("viewBox", "0 0 50 20")
-    //.attr("preserveAspectRatio", "xMidYMid meet");
-    let injuryBar = injurySvg.selectAll("g")
-      .data(injuryData)
-      .enter().append("g")
-      .attr("injury-max", function (d) { return d.injury });
-
-    let percentSoFar = 0;
-    injuryBar.append("rect")
-      .attr("height", "5px")
-      .attr("width", function (d) { return ((d.value / total) * 100) + "%" })
-      .attr("y", 0)
-      .attr("x", function (d) {
-        let prePrecent = percentSoFar;
-        let thisPrecent = (d.value / total) * 100;
-        percentSoFar = percentSoFar + thisPrecent;
-        return prePrecent + "%";
-      })
-      .style("fill", function (d) { return injuryColor(d.injury); });
-
-    injuryBar.append("text").text(function (d) { return d.injury })
-      .attr("y", 8)
-      .attr("x", function (d) { return d3.select('[injury-max = "' + d.injury + '"] rect').attr("x") });
-
-
-    //injuryLabel.style("transform","translate(300,150) rotate(0)");
-
-    /*
-    tooltip.append("svg")
-    .attr("viewbox", "0 0 50 100")
-    //
-    .append("g");
-    */
-
 
 
     /* determine tooltip position start */
-    let nodeCoords = getCoords('[title="' + cause + '"] circle');
+    let nodeCoords = getCoords('[title="' + nodeData.id + '"] circle');
     let svgCoords = getCoords("#main-chart");
     let tooltipCoords = getCoords(".tooltip");
 
@@ -1393,7 +1461,7 @@ const drawTooltip = (nodeData, data, cause) => {
 
 const changeLegend = (cause, isHorizontal) => {
 
-  const duration = 1000;
+  const duration = 500;
   const controller = d3.select("#controller");
   let isShow = true;
 
@@ -1437,7 +1505,7 @@ const changeLegend = (cause, isHorizontal) => {
           controller.attr("title", "Show Legend");
           controller.select("img").attr("src", "source/hide.svg");
           d3.select("#legend").transition().duration(duration).style("opacity", 1);
-          d3.select("#sidebar").style("height", "100%");
+          d3.select("#sidebar").style("height", height);
           d3.select("#sidebar").transition().duration(duration).style("background-color", "white");
           d3.select("#sidebar").style("z-index", 800);
           d3.select("h2").transition().duration(duration).style("opacity", null);
@@ -1561,6 +1629,32 @@ const getNetworkData = (raw) => {
     };
     */
   });
+
+  function pushNodeNeighbor(cause, neighbor) {
+
+    let index = getJsonArrayIndex(nodeNeighbor, "cause", cause);
+
+    if (index === -1) {
+      // if the cause exist in the nodeNeighbor array
+      nodeNeighbor.push({
+        "cause": cause,
+        "neighbor": [],
+      })
+      nodeNeighbor[nodeNeighbor.length - 1]["neighbor"].push({ "name": neighbor, "value": 1 });
+
+    } else {
+      // if the cause is not exisit in the nodeNeighbor array
+      // check if the neighbor exist or not
+      const neighborIndex = getJsonArrayIndex(nodeNeighbor[index]["neighbor"], "name", neighbor);
+      if (neighborIndex === -1) {
+        // if the neighbor is not exist, push
+        nodeNeighbor[index]["neighbor"].push({ "name": neighbor, "value": 1 });
+      } else {
+        // if the cause and neighbor both exist, modify value
+        nodeNeighbor[index]["neighbor"][neighborIndex]["value"] = nodeNeighbor[index]["neighbor"][neighborIndex]["value"] + 1
+      }
+    }
+  }
 
   return { network: network, maxValue: maxValue };
 }
@@ -1736,26 +1830,6 @@ const getJsonArrayIndex = (JsonArray, searchKey, value) => {
   return index;
 }
 
-const pushNodeNeighbor = (cause, causeNeighbor) => {
-
-  let index = getJsonArrayIndex(nodeNeighbor, "cause", cause);
-
-  if (index === -1) {
-    nodeNeighbor.push({
-      "cause": cause,
-      "neighbor": {},
-    })
-    let causeIndex = getJsonArrayIndex(nodeNeighbor, "cause", cause);
-    let array = causeNeighbor.split();
-    nodeNeighbor[causeIndex]["neighbor"] = array;
-
-
-  } else if (!nodeNeighbor[index].neighbor.includes(causeNeighbor)) {
-    nodeNeighbor[index].neighbor.push(causeNeighbor);
-  }
-
-}
-
 const isOutside = (node) => {
 
   let position = {
@@ -1828,7 +1902,7 @@ const array_move = (arr, old_index, new_index) => {
   return arr; // for testing
 };
 
-const getCauseType = (detailCause) => {
+const getCauseType = (cause) => {
   let type;
   let naturalCauses = [
     "Water",
@@ -1846,11 +1920,12 @@ const getCauseType = (detailCause) => {
     "Exhaustion",
     "Hydraulic",
     "Hypothermia",
+    "Exposure",
   ]
-  if (detailCause === "Unknown" || detailCause === "unknown") {
+  if (cause === "Unknown" || cause === "unknown") {
     type = "Unknown";
   } else {
-    type = (naturalCauses.includes(detailCause)) ? "Natural environment" : "Human error";
+    type = (naturalCauses.includes(cause)) ? "Natural environment" : "Human error";
   }
   return type
 }

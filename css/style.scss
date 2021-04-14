@@ -8,6 +8,8 @@ $uncategorized-color: #012749;
 $default-color: black;
 $bg-color: white;
 
+$chart-font-size: 10px;
+
 html , body {
     height: 100vh;
     margin: 0;
@@ -125,14 +127,21 @@ svg {
 
 
 
-[type = "Human error"] circle {
-    fill: $human-color;
+[type = "Human error"]{
+    circle{
+        fill: $human-color;
+    }    
 }
-[type = "Natural environment"] circle {
-    fill: $natural-color;
+[type = "Natural environment"] {
+    circle{
+        fill: $natural-color;
+    }
+    
 }
-[type = "Uncategorized"] circle {
-    fill: $uncategorized-color
+[type = "Uncategorized"]{
+    circle{
+        fill: $uncategorized-color;
+    }    
 }
 
 
@@ -195,7 +204,7 @@ svg {
   
 text {
     //font-family: sans-serif;
-    font-size: 10px;
+    font-size: $chart-font-size;
 }
 
 .center .node {
@@ -216,7 +225,7 @@ text {
 
 
 // tooltips
-$main-tooltip-width: 200px;
+$main-tooltip-width: 300px;
 $accident-tooltip-width: 400px;
 $tooltip-padding: 2em;
 
@@ -232,7 +241,31 @@ $tooltip-padding: 2em;
         }
         &[highlighted=true] {
             opacity: 0.9;
-        }        
+        }
+
+        p {
+            margin-top: 0.2em;
+        }
+
+        text.number {
+            fill: $bg-color !important;
+        }
+
+        [type = "Human error"]  {
+            rect , text {
+                fill: $human-color;
+            }
+        }
+        [type = "Natural environment"]{
+            rect, text {
+                fill: $natural-color;
+            }           
+        }
+        [type = "Uncategorized"] {
+            rect , text {
+                fill: $uncategorized-color;
+            }
+        }
     }
 
     &.accident-tooltip {
@@ -255,23 +288,25 @@ $tooltip-padding: 2em;
     position: absolute;    
     animation: pulse 10s infinite;
     &[type = "Human error"] {
-        border-color: $human-color;
+        //border-color: $human-color;
         .cause-type {
             color: $human-color;  
         }
     }
     &[type = "Natural environment"]  {
-        border-color: $natural-color;
+        //border-color: $natural-color;
         .cause-type {
             color: $natural-color;
         }
     }
     &[type = "Uncategorized"] {
-        border-color: $uncategorized-color;
+        //border-color: $uncategorized-color;
         .cause-type {
             color: $uncategorized-color; 
         }
     }
+
+
     
 }
 
@@ -281,9 +316,19 @@ $tooltip-padding: 2em;
         margin: 2em 0em;
         opacity: 0.5;
     }
-    .analysis-title {
+    .tooltip-subtitle {
         font-size:  xx-small;
-        color: lighten($default-color, 70%);
+        color: lighten($default-color, 65);
+        margin-bottom: 1em;
+    }
+
+    .tooltip-note {
+        fill: lighten($color: $default-color, $amount: 70);
+        color: lighten($color: $default-color, $amount: 70);
+        font-size: $chart-font-size;
+        &::before {
+            content: "* ";
+        }
     }
     .view-more {
         text-align: right;
@@ -334,14 +379,14 @@ $tooltip-padding: 2em;
 
 .main-cause-tooltip .injury-chart {
     //background-color: purple;
-    height: 50px;
-    margin: 1em 0;
+    //height: 50px;
+    
     svg {
         //background-color: black;
         //width:calc(100%-2em);
         //height: inherit;
-        width: 200px;
         height: auto;
+        width: $main-tooltip-width;
         rect {
             stroke-width: 0.5;
             stroke: white;
@@ -349,6 +394,14 @@ $tooltip-padding: 2em;
         text {
             font-size: 3px;
         }
+    }
+}
+
+.main-cause-tooltip .neighor-cause-chart{
+    
+    svg { 
+        width:  $main-tooltip-width;     
+        height: auto;
     }
 }
 
