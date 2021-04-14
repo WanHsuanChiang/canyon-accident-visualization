@@ -20,7 +20,6 @@ html, body {
   bottom: 1em;
   left: 1em;
   opacity: 0;
-  cursor: pointer;
 }
 
 .float-btn {
@@ -30,8 +29,9 @@ html, body {
   -webkit-box-shadow: 5px 5px 10px black;
           box-shadow: 5px 5px 10px black;
   position: absolute;
-  z-index: 1000;
+  z-index: 1200;
   padding: 0.5em;
+  cursor: pointer;
 }
 
 .float-btn:hover {
@@ -51,6 +51,14 @@ html, body {
   width: 100%;
   height: 100%;
   display: none;
+  background-color: black;
+}
+
+#filter > div {
+  background-color: white;
+  border-radius: 5px;
+  height: 100px;
+  width: 100px;
 }
 
 #sidebar {
@@ -96,10 +104,10 @@ svg {
   right: 0;
   bottom: 0;
   width: 100%;
-  font-size: xx-small;
   text-align: right;
-  padding: 1em;
-  opacity: 0.2;
+  font-size: x-small;
+  padding: 0.5em;
+  opacity: 0.3;
 }
 
 #contribution a {
@@ -178,7 +186,6 @@ svg {
 
 .node.accident circle {
   fill: #c1c1c1;
-  r: 20;
 }
 
 .node .cause-label {
@@ -196,6 +203,7 @@ text {
 
 .center .node {
   cursor: url("/source/back.svg"), auto !important;
+  cursor: pointer;
   -webkit-animation: fadein 5s linear 1 normal forwards;
   opacity: 0.5;
 }
@@ -546,7 +554,6 @@ text {
   margin: 1em 0;
   max-height: 7em;
   width: 100%;
-  max-width: calc($accident-tooltip-width - $tooltip-padding*2);
   -webkit-line-clamp: 5;
   -webkit-box-orient: vertical;
   overflow: hidden;
