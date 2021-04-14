@@ -204,21 +204,17 @@ text {
 .center .node {
   cursor: url("/source/back.svg"), auto !important;
   cursor: pointer;
-  -webkit-animation: fadein 5s linear 1 normal forwards;
   opacity: 0.5;
+  /*
+    @-webkit-keyframes fadein{
+        from { opacity: 1; }
+        to { opacity: 0.3; }
+    }
+    */
 }
 
 .center .node:hover {
   opacity: 1 !important;
-}
-
-@-webkit-keyframes fadein {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0.3;
-  }
 }
 
 .center .node[highlighted=true] {

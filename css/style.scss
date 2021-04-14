@@ -239,15 +239,17 @@ text {
     cursor: url("/source/back.svg"), auto !important;
     cursor:  pointer;
     //transition: opacity 3s;
-    -webkit-animation: fadein 5s linear 1 normal forwards;
+    //-webkit-animation: fadein 5s linear 1 normal forwards;
     opacity: 0.5;
     &:hover {
         opacity: 1 !important;
     }
+    /*
     @-webkit-keyframes fadein{
         from { opacity: 1; }
         to { opacity: 0.3; }
     }
+    */
     &[highlighted= true]{
         opacity: 1;
     }
@@ -597,6 +599,7 @@ $tooltip-padding: 2em;
     text-overflow: ellipsis;
     display: -webkit-box; 
     padding-top: 0;
+    //background-color: linear-gradient($bg-color 0%, 20%, opacify($bg-color,0) 100%);
   
 }
 
