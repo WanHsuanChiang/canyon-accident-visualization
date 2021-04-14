@@ -9,7 +9,7 @@ const analysisDataUrl = "data/accident-analysis.csv";
 const width = window.innerWidth;
 const height = window.innerHeight;
 const svg = d3.select("svg");
-const isDebug = true;
+const isDebug = false;
 let ctx = {
 
   GRPAH: null,//cause,detail
