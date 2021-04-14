@@ -57,7 +57,7 @@ html , body {
     top:0;
     width: 25%;  
     padding: 1em;
-    color: lighten($color: $default-color, $amount: 50)
+    color: lighten($color: $default-color, $amount: 50);
     h1 {
         font-size: x-large;
         text-transform: capitalize;

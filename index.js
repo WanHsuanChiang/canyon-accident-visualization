@@ -9,7 +9,7 @@ const analysisDataUrl = "data/accident-analysis.csv";
 const width = window.innerWidth;
 const height = window.innerHeight;
 const svg = d3.select("svg");
-const isDebug = false;
+const isDebug = true;
 let ctx = {
 
   GRPAH: null,//cause,detail
@@ -383,7 +383,7 @@ function draw(data) {
       } catch {
         drawTooltip(network.nodes[d.index], data, null);
       }
-      
+
 
 
     }
@@ -1255,7 +1255,7 @@ const drawFilter = (array) => {
 
 const drawTooltip = (nodeData, data, nodeNeighbor) => {
 
-  if (status.isHover && status.screen === "cause" && nodeNeighbor !== null) {
+  if (status.isHover && status.screen === "cause") {
 
     status.isTooltip = true;
 
@@ -1274,7 +1274,8 @@ const drawTooltip = (nodeData, data, nodeNeighbor) => {
     d3.selectAll(".accident-number").append("div").html("Accident Numbers");
     d3.selectAll(".accident-number").append("div").html(nodeData.value);
     */
-    
+    //d3.max(barData, d => d.value)
+    let injuryData = [];
     drawInjuryChart();
     function drawInjuryChart() {
 
@@ -1286,12 +1287,10 @@ const drawTooltip = (nodeData, data, nodeNeighbor) => {
       /* draw small injury diagram start*/
       // https://observablehq.com/@eesur/d3-single-stacked-bar
 
-      // set up data
-      let injuryData = [];
-      let total = nodeData.value;
-      //let total = d3.sum(injuryData, d => d.value);
+      // set up data      
 
-      // for each accident
+      //let total = d3.sum(injuryData, d => d.value);
+      // for each accident      
       for (i = 0; i < nodeData.accidents.length; i++) {
 
         let injuryIndex = getJsonArrayIndex(injuryData, "injury", data[i].injuryMax);
@@ -1322,7 +1321,7 @@ const drawTooltip = (nodeData, data, nodeNeighbor) => {
       
       */
 
-      let injurySvg = tooltip.append("div").style("height",chartHeight + "px").attr("class", "injury-chart")
+      let injurySvg = tooltip.append("div").style("height", chartHeight + "px").attr("class", "injury-chart")
         .append("svg")
         .attr("viewBox", "0 0 300 " + chartHeight)
       //.attr("preserveAspectRatio", "xMidYMid meet");
@@ -1334,11 +1333,11 @@ const drawTooltip = (nodeData, data, nodeNeighbor) => {
       let percentSoFar = 0;
       injuryBar.append("rect")
         .attr("height", "10px")
-        .attr("width", function (d) { return ((d.value / total) * 100) + "%" })
+        .attr("width", function (d) { return ((d.value / nodeData.value) * 100) + "%" })
         .attr("y", 0)
         .attr("x", function (d) {
           let prePrecent = percentSoFar;
-          let thisPrecent = (d.value / total) * 100;
+          let thisPrecent = (d.value / nodeData.value) * 100;
           percentSoFar = percentSoFar + thisPrecent;
           return prePrecent + "%";
         })
@@ -1359,12 +1358,27 @@ const drawTooltip = (nodeData, data, nodeNeighbor) => {
       */
     }
 
-    tooltip.append("p").html(nodeData.value+ " accidents occurred because of " + nodeData.id.toLowerCase() + ".");
+    console.log(d3.max(injuryData, d => d.value))
 
-    drawBarChart();
+    tooltip.append("p").html(function () {
+      let max = d3.max(injuryData, d => d.value) ;
+      let num = ((max/ nodeData.value) * 100).toFixed(0)
+      let array = injuryData.sort(function (a, b) { return -a.injuryValue - -b.injuryValue });
+      let injury = array[getJsonArrayIndex(array,"value",max)].injury.toLowerCase();
+      return nodeData.value + " accidents occurred because of " + nodeData.id.toLowerCase() + ". " + num + "% of the accidents resulted in " + injury + ".";
+    })
+
+
+
+
+    //nodeData.value+ " accidents occurred because of " + nodeData.id.toLowerCase() + ". ");
+
+    if (nodeNeighbor !== null) {
+      drawBarChart();
+    }
     function drawBarChart() {
 
-      const barData = nodeNeighbor.sort(function (a, b) { return -a.value - -b.value });  
+      const barData = nodeNeighbor.sort(function (a, b) { return -a.value - -b.value });
 
       const barH = 12; //px
       const padding = 2; // px
@@ -1372,9 +1386,9 @@ const drawTooltip = (nodeData, data, nodeNeighbor) => {
       const chartH = barData.length * barH + (barData.length - 1) * padding + margin.top + margin.bottom;
       //const margin = ({top: 30, right: 0, bottom: 10, left: 30});            
 
-      tooltip.append("span").attr("class","tooltip-subtitle").html("The causes identified in the same accident. (frequency)");
+      tooltip.append("span").attr("class", "tooltip-subtitle").html("The causes identified in the same accident. (frequency)");
       const barSvg = tooltip.append("div").style("height", chartH + "px").attr("class", "neighor-cause-chart")
-      .append("svg").attr("viewBox", "0 0 300 " + chartH);
+        .append("svg").attr("viewBox", "0 0 300 " + chartH);
       //tooltip.append("span").attr("class","tooltip-note").html("Many causes can contribute to a single accident.")   
 
 
@@ -1399,26 +1413,26 @@ const drawTooltip = (nodeData, data, nodeNeighbor) => {
         .attr("height", barH + "px")
 
       bar.append("text")
-      .attr("x", function(d){return width(d.value) + 2 + "%" })
-      .attr("y",(d, i) => i * (barH + padding) + margin.top + barH - 2)
-      .text((d) => d.name )
+        .attr("x", function (d) { return width(d.value) + 2 + "%" })
+        .attr("y", (d, i) => i * (barH + padding) + margin.top + barH - 2)
+        .text((d) => d.name)
 
-      bar.append("text").attr("class","number")
-      .attr("text-anchor","end")
-      .attr("x", function(d){return width(d.value) -1 + "%" })
-      .attr("y",(d, i) => i * (barH + padding) + margin.top + barH - 2)
-      .text((d)=> d.value)
+      bar.append("text").attr("class", "number")
+        .attr("text-anchor", "end")
+        .attr("x", function (d) { return width(d.value) - 1 + "%" })
+        .attr("y", (d, i) => i * (barH + padding) + margin.top + barH - 2)
+        .text((d) => d.value)
 
-      barSvg.append("text").attr("class","tooltip-note")
-      .attr("x",0)
-      .attr("y","98%")
-      .text("* Many causes can contribute to a single accident.")
+      barSvg.append("text").attr("class", "tooltip-note")
+        .attr("x", 0)
+        .attr("y", "98%")
+        .text("* Many causes can contribute to a single accident.")
 
     }
 
 
 
-    
+
 
 
     /* determine tooltip position start */
@@ -1426,22 +1440,15 @@ const drawTooltip = (nodeData, data, nodeNeighbor) => {
     let svgCoords = getCoords("#main-chart");
     let tooltipCoords = getCoords(".tooltip");
 
-    // left = x, top = y
-    // find center coordinates
-    let centerCoords = {
-      cx: (nodeCoords.right - nodeCoords.left) / 2 + nodeCoords.left,
-      cy: (nodeCoords.bottom - nodeCoords.top) / 2 + nodeCoords.top,
-    }
-
     // determine x
     let tooltipX;
-    if (centerCoords.cx > svgCoords.x + svgCoords.width / 2) { // at right      
+    if (nodeCoords.cx > svgCoords.x + svgCoords.width / 2) { // at right      
       tooltipX = nodeCoords.x - tooltipCoords.width - 20;
     } else { // at left      
       tooltipX = nodeCoords.right + 20;
     }
     // determin y
-    tooltipY = centerCoords.cy - tooltipCoords.height / 2;
+    tooltipY = nodeCoords.cy - tooltipCoords.height / 2;
     if (tooltipY < svgCoords.y) { // if the top of tooltip is above svg top
       tooltipY = svgCoords.y + 20;
     } else if (tooltipY + tooltipCoords.height > svgCoords.y + svgCoords.height) { // if the bottom of the tooltip is more than svg bottom
