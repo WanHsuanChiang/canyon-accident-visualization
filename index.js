@@ -132,7 +132,7 @@ d3.csv(dataUrl).then(function (accidentData) {
   drawSidebar();
   draw(accidentData);
 
-  d3.select("#filter-icon").on("click", showFilter());
+  //d3.select("#filter-icon").on("click", showFilter());
 
     /*
 
@@ -234,6 +234,7 @@ function draw(data) {
     .data(links)
     .enter().append("g").append("line")
     .attr("class", "link")
+    .attr("value", (d) => d.value)
     .attr("source", function (d) { return d.source })
     .attr("target", function (d) { return d.target })
     .attr("stroke-width", function (d) { return Math.sqrt(d.value) * 3; });
@@ -272,7 +273,8 @@ function draw(data) {
     "Communication error",
     "Equipment misuse",
     "Group dynamics",
-    "Solo canyoneering"
+    "Solo canyoneering",
+    "Jumping error",
   ]
   let modifyValue = [
     10,
@@ -281,6 +283,7 @@ function draw(data) {
     5,
     6,
     4,
+    5,
   ]
   for (i = 0; i < modify.length; i++) {
     let ie = d3.select('.node[title="' + modify[i] + '"] text');
@@ -484,7 +487,7 @@ const drawDetail = (data, cause) => {
   status.isHover = false;
   status.isTooltip = false;
   d3.selectAll(".tooltip").remove();
-  svg.attr("id", "detail-chart");
+  svg.attr("id", "detail-chart");   
 
   let detailStatus = {
     isNodeHover: false,
@@ -497,6 +500,7 @@ const drawDetail = (data, cause) => {
 
   let networkSet = getAccidentNetworkData(data, cause);
   let network = networkSet.network;
+  console.log(network)
 
   const links = network.links.map(d => Object.create(d));
   const nodes = network.nodes.map(d => Object.create(d));
@@ -881,8 +885,6 @@ const drawDetail = (data, cause) => {
 
 
   const drawAccidentTooltip = (nodeData) => {
-
-    console.log(nodeData)
 
     const isDraw = () => {
       if (
@@ -1476,13 +1478,15 @@ const drawTooltip = (nodeData, data, nodeNeighbor) => {
 
       const barData = nodeNeighbor.sort(function (a, b) { return -a.value - -b.value });
 
+      //console.log(nodeData.id)
+
       const barH = 16; //px
       const padding = 2; // px
       const margin = ({ top: 5, right: 0, bottom: 15, left: 0 });
       const chartH = barData.length * barH + (barData.length - 1) * padding + margin.top + margin.bottom;
       //const margin = ({top: 30, right: 0, bottom: 10, left: 30});            
 
-      tooltip.append("span").attr("class", "tooltip-subtitle").html("The causes identified in the same accident. (frequency)");
+      tooltip.append("span").attr("class", "tooltip-subtitle").html("The causes identified in the same accident. (number of accidents)");
       const barSvg = tooltip.append("div").style("height", chartH + "px").attr("class", "neighor-cause-chart")
         .append("svg").attr("viewBox", "0 0 300 " + chartH);
       //tooltip.append("span").attr("class","tooltip-note").html("Many causes can contribute to a single accident.")   
@@ -1517,12 +1521,28 @@ const drawTooltip = (nodeData, data, nodeNeighbor) => {
         .attr("text-anchor", "end")
         .attr("x", function (d) { return width(d.value) - 1 + "%" })
         .attr("y", (d, i) => i * (barH + padding) + margin.top + barH - 4)
-        .text((d) => d.value)
+        .text((d) => d.value)  
+        /*      
+        .text(function(d){
+          let text;
+          let sourceLink = d3.select('.link[source="'+nodeData.id+'"][target="'+d.name+'"]').attr("value");
+          let targetLink = d3.select('.link[target="'+nodeData.id+'"][source="'+d.name+'"]').attr("value");
+          console.log(d3.select('.link[target="'+d.name+'"]'))  
+          if (source !== undefined){
+            text = source
+          }else {text = target}
+          return text;
+        })
+        */
+
+       
+        
+        
 
       barSvg.append("text").attr("class", "tooltip-note")
         .attr("x", 0)
-        .attr("y", "98%")
-        .text("* Many causes can contribute to a single accident.")
+        .attr("y", "99%")
+        .text("* Many causes can contribute to one accident.")
 
     }
 

@@ -356,6 +356,7 @@ $tooltip-padding: 2em;
     }
 
     .tooltip-note {
+        font-size: 8px;
         fill: lighten($color: $default-color, $amount: 70);
         color: lighten($color: $default-color, $amount: 70);
         font-size: $chart-font-size;
