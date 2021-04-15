@@ -500,7 +500,7 @@ const drawDetail = (data, cause) => {
 
   const links = network.links.map(d => Object.create(d));
   const nodes = network.nodes.map(d => Object.create(d));
-  const radius = 12;
+  const radius = height/64;
   const forceCenter = { x: width / 2, y: height / 4 };
 
   // determine layout
